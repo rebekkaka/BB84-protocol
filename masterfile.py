@@ -104,6 +104,7 @@ class System:
         self.object_list.append(self.b)
         self.currentStep = 0
         self.phase = 0
+        self.indices = []
         self.frameList = []
         self.ABList = []
         self.EList = []
@@ -122,7 +123,7 @@ class System:
                 relief=tk.RAISED,
                 borderwidth=1
             )
-            frame.grid(row=self.name_list.index(name)*3, column=1)
+            frame.grid(row=self.name_list.index(name), column=0)
             label = tk.Label(master=frame, text=name)
             label.pack()
             frame2 = tk.Frame(
@@ -130,7 +131,7 @@ class System:
                 relief=tk.RAISED,
                 borderwidth=1
             )
-            frame2.grid(row=self.name_list.index(name)*3, column=2)
+            frame2.grid(row=self.name_list.index(name), column=1)
             label = tk.Label(master=frame2, text="Bit")
             label.pack()
             label2 = tk.Label(master=frame2, text="Basis")
@@ -204,8 +205,8 @@ class System:
             self.btn_1['command'] = self.compare_bases
         elif self.phase ==2:
             self.phase_label['text'] = 'Phase 3: Error rate'
-            self.btn_1['text'] = 'Compare bases'
-            self.btn_1['command'] = self.compare_bases()
+            self.btn_1['text'] = 'Compute error rate'
+            self.btn_1['command'] = self.error_rate
         elif self.phase ==3:
             self.phase_label['text'] = 'Phase 4: Error correction'
             self.btn_1['text'] = 'Compare bases'
@@ -226,7 +227,7 @@ class System:
             if(n.bit_array[number] != -1):
                 frame = tk.Frame(master=self.process_frame)
                 self.frameList.append(frame)
-                frame.grid(row=self.object_list.index(n)*3, column=3+number)
+                frame.grid(row=self.object_list.index(n), column=3+number)
                 label = tk.Label(master=frame, text=str(n.bit_array[number]))
                 
                 label.pack()
@@ -255,11 +256,49 @@ class System:
     def compare_bases(self):
         for i in range(len(self.a.basis_array)):
             if self.a.basis_array[i]==self.b.basis_array[i]:
+                self.indices.append(i)
                 for element in self.ABList[i]:
                     element['background']='green2'
             if self.e.basis_array[i]==self.a.basis_array[i]:
                 for element in self.EList[i]:
                     element['background']='pale green'
+                    
+        frame = tk.Frame(master=self.process_frame)
+        frame.grid(row=4,column=0)
+        label = tk.Label(master=frame, text="Shared Key")
+        label.grid(row=0)
+        label_a = tk.Label(master=frame, text='Alice')
+        label_a.grid(row=1,column=0)
+        if self.eavesdropper:
+            label_e = tk.Label(master=frame, text='Eve')
+            label_e.grid(row=2, column=0)
+            row_b=3
+        else:
+            row_b=2
+        label_b = tk.Label(master=frame, text='Bob')
+        label_b.grid(row=row_b, column=0)
+        c =0
+        for i in range(len(self.a.basis_array)):
+            if self.a.basis_array[i]==self.b.basis_array[i]:
+                frame = tk.Frame(master=self.process_frame)
+                frame.grid(row=4,column=c+2)
+                label = tk.Label(master=frame, text=str(self.a.bit_array[i]))
+                label.grid(row=1, column=0)
+                if self.eavesdropper and self.e.bit_array[i]!=-1:
+                    label = tk.Label(master=frame, text=str(self.e.bit_array[i]))
+                    label.grid(row=2, column=0)
+                label = tk.Label(master=frame, text=str(self.b.bit_array[i]))
+                label.grid(row=row_b, column=0)
+                c+=1
+               
+    def error_rate(self):
+        counter = 0
+        for i in self.indices:
+            if self.a.bit_array[i]!=self.b.bit_array[i]:
+                counter+=1
+        error=float(counter)/float(len(self.indices))
+        print(error)
+                
 
     def postprocessing(self):
         self.compare_basis()
