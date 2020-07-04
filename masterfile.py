@@ -109,6 +109,9 @@ class System:
         self.ABList = []
         self.EList = []
         self.IList = []
+        self.two_values = None
+        self.final_key_alice = []
+        self.final_key_bob = []
         self.initializeTkinter()
         
 
@@ -213,8 +216,10 @@ class System:
             self.btn_1['command'] = self.error_rate
         elif self.phase ==3:
             self.phase_label['text'] = 'Phase 4: Error correction'
-            self.btn_1['text'] = 'Compare bases'
-            self.btn_1['command'] = self.compare_bases()
+            self.btn_1['text'] = 'One error correction step'
+            self.btn_2['text'] = 'All error correction at once'
+            self.btn_1['command'] = self.error_correction_one_step
+            self.btn_2['command'] = self.error_correction
         elif self.phase ==4:
             self.phase_label['text'] = 'Phase 5: Privacy amplification'
             self.btn_1['text'] = 'Compare bases'
@@ -304,24 +309,99 @@ class System:
     def error_rate(self):
         number = int(self.entry.get())
         print(number)
-        subset = random.sample(self.indices, number)
+        self.subset = random.sample(self.indices, number)
         counter = 0
-        for i in subset:
+        for i in self.subset:
             for label in self.IList[i]:
                 label['background'] = 'orange'
             if self.a.bit_array[i]!=self.b.bit_array[i]:
                 counter+=1
-        error=float(counter)/float(len(subset))
+        error=float(counter)/float(len(self.subset))
         self.phase3_frame = tk.Frame(master=self.process_frame)
         self.phase3_frame.grid(row=2, column=0)
         error_label = tk.Label(master=self.phase3_frame, text = 'The error rate is ' + str(error) + '. Do you want to abort or continue with postprocessing?' )
         error_label.grid(row=0, column=0)
-        button_frame = tk.Frame(master=self.phase3_frame)
-        button_frame.grid(row=1, column=0)
-        button_abort = tk.Button(master=button_frame, text = 'Abort', command = self.abort)
+        self.button_frame = tk.Frame(master=self.phase3_frame)
+        self.button_frame.grid(row=1, column=0)
+        button_abort = tk.Button(master=self.button_frame, text = 'Abort', command = self.abort)
         button_abort.grid(row=0, column=0)
-        button_continue = tk.Button(master=button_frame, text = 'Continue with postprocessing', command = self.go_to_next_phase)
+        button_continue = tk.Button(master=self.button_frame, text = 'Continue with postprocessing', command = self.continue_postprocessing)
         button_continue.grid(row=0,column=1)
+        
+    def continue_postprocessing(self):
+        self.button_frame.grid_forget()
+        self.button_frame.destroy()
+        frame = tk.Frame(master=self.process_frame)
+        frame.grid(row=3,column=0)
+        label = tk.Label(master=frame, text="Shared Key")
+        label.grid(row=0,column=1)
+        label_a = tk.Label(master=frame, text='Alice')
+        label_a.grid(row=1,column=1)
+        if self.eavesdropper:
+            label_e = tk.Label(master=frame, text='Eve')
+            label_e.grid(row=2, column=1)
+            row_b=3
+        else:
+            row_b=2
+        label_b = tk.Label(master=frame, text='Bob')
+        label_b.grid(row=row_b, column=1)
+        c =5
+        self.IList.clear()
+        tmp = []
+        newlist = []
+        for i in self.indices:
+            if i in self.subset:
+                pass
+            else:
+                newlist.append(i)
+                #frame = tk.Frame(master=self.process_frame)
+                #frame.grid(row=4,column=c+2)
+                label = tk.Label(master=frame, text=str(self.a.bit_array[i]))
+                tmp.append(label)
+                label.grid(row=1, column=c)
+                if self.eavesdropper and self.e.bit_array[i]!=-1:
+                    label = tk.Label(master=frame, text=str(self.e.bit_array[i]))
+                    #tmp.append(label)
+                    label.grid(row=2, column=c)
+                label = tk.Label(master=frame, text=str(self.b.bit_array[i]))
+                tmp.append(label)
+                label.grid(row=row_b, column=c)
+                c+=1
+                self.IList.append(tmp)
+                tmp = []
+        self.indices = newlist
+        self.go_to_next_phase()
+    
+    def error_correction_one_step(self):
+        if self.two_values !=None:
+            for label in self.IList[self.two_values[0]]:
+                label['background']='white'
+            for label in self.IList[self.two_values[1]]:
+                label['background']='white'
+        if len(self.indices)>=2:            
+            self.two_values = random.sample(self.indices, 2)
+            for i in self.two_values:
+                for label in self.IList[self.indices.index(i)]:
+                    label['background']='orange'
+            value_alice = self.a.bit_array[self.two_values[0]]^self.a.bit_array[self.two_values[1]]
+            value_bob = self.b.bit_array[self.two_values[0]]^self.b.bit_array[self.two_values[1]]
+            print("alice", value_alice)
+            print("bob", value_bob)
+            if value_alice==value_bob:
+                self.final_key_alice.append(self.a.bit_array[self.two_values[0]])
+                self.final_key_bob.append(self.b.bit_array[self.two_values[0]])
+            else:
+                pass
+            self.indices = self.indices.remove(self.two_values[0])
+            self.indices = self.indices.remove(self.two_values[1])
+        else:
+            print("not enough values")
+        
+            
+        
+        
+    def error_correction(self):
+        pass
                 
 
     def postprocessing(self):
