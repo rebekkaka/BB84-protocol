@@ -108,6 +108,7 @@ class System:
         self.frameList = []
         self.ABList = []
         self.EList = []
+        self.IList = []
         self.initializeTkinter()
         
 
@@ -117,9 +118,11 @@ class System:
         self.menu_frame.grid(row=0, column =0)
         self.process_frame = tk.Frame(master=self.window)
         self.process_frame.grid(row=0, column =1)
+        self.phase1_frame =tk.Frame(master=self.process_frame)
+        self.phase1_frame.grid(row=0, column=0)
         for name in self.name_list:
             frame = tk.Frame(
-                master=self.process_frame,
+                master=self.phase1_frame,
                 relief=tk.RAISED,
                 borderwidth=1
             )
@@ -127,7 +130,7 @@ class System:
             label = tk.Label(master=frame, text=name)
             label.pack()
             frame2 = tk.Frame(
-                master=self.process_frame,
+                master=self.phase1_frame,
                 relief=tk.RAISED,
                 borderwidth=1
             )
@@ -157,24 +160,24 @@ class System:
                     command = self.simulate_multiple_cycle
                     )
         self.btn_2.grid(row=2,column=0)
-        label = tk.Label(master= self.menu_frame, text="Number of cycles")
-        label.grid(row=3,column=0)
+        self.main_label = tk.Label(master= self.menu_frame, text="Number of cycles")
+        self.main_label.grid(row=3,column=0)
         self.btn_3 = tk.Button(master=self.menu_frame,
                     text="Go to next phase",
                     width=25,
                     height=5,
                     command = self.go_to_next_phase
                     )
-        self.btn_3.grid(row=4,column=0)
+        self.btn_3.grid(row=5,column=0)
         self.btn_4 = tk.Button(master=self.menu_frame,
                     text="Exit",
                     width=25,
                     height=5,
                     command = self.window.destroy
                     )
-        self.btn_4.grid(row=5,column=0)
+        self.btn_4.grid(row=6,column=0)
         self.entry = tk.Entry(master=self.menu_frame)
-        self.entry.grid(row=3,column=0)
+        self.entry.grid(row=4,column=0)
 
 
         self.window.mainloop()
@@ -206,6 +209,7 @@ class System:
         elif self.phase ==2:
             self.phase_label['text'] = 'Phase 3: Error rate'
             self.btn_1['text'] = 'Compute error rate'
+            self.main_label['text'] = 'Choose number of samples'
             self.btn_1['command'] = self.error_rate
         elif self.phase ==3:
             self.phase_label['text'] = 'Phase 4: Error correction'
@@ -225,7 +229,7 @@ class System:
         eobjects = []
         for n in self.object_list:
             if(n.bit_array[number] != -1):
-                frame = tk.Frame(master=self.process_frame)
+                frame = tk.Frame(master=self.phase1_frame)
                 self.frameList.append(frame)
                 frame.grid(row=self.object_list.index(n), column=3+number)
                 label = tk.Label(master=frame, text=str(n.bit_array[number]))
@@ -264,40 +268,60 @@ class System:
                     element['background']='pale green'
                     
         frame = tk.Frame(master=self.process_frame)
-        frame.grid(row=4,column=0)
+        frame.grid(row=1,column=0)
         label = tk.Label(master=frame, text="Shared Key")
-        label.grid(row=0)
+        label.grid(row=0,column=1)
         label_a = tk.Label(master=frame, text='Alice')
-        label_a.grid(row=1,column=0)
+        label_a.grid(row=1,column=1)
         if self.eavesdropper:
             label_e = tk.Label(master=frame, text='Eve')
-            label_e.grid(row=2, column=0)
+            label_e.grid(row=2, column=1)
             row_b=3
         else:
             row_b=2
         label_b = tk.Label(master=frame, text='Bob')
-        label_b.grid(row=row_b, column=0)
-        c =0
+        label_b.grid(row=row_b, column=1)
+        c =5
+        tmp = []
         for i in range(len(self.a.basis_array)):
             if self.a.basis_array[i]==self.b.basis_array[i]:
-                frame = tk.Frame(master=self.process_frame)
-                frame.grid(row=4,column=c+2)
+                #frame = tk.Frame(master=self.process_frame)
+                #frame.grid(row=4,column=c+2)
                 label = tk.Label(master=frame, text=str(self.a.bit_array[i]))
-                label.grid(row=1, column=0)
+                tmp.append(label)
+                label.grid(row=1, column=c)
                 if self.eavesdropper and self.e.bit_array[i]!=-1:
                     label = tk.Label(master=frame, text=str(self.e.bit_array[i]))
-                    label.grid(row=2, column=0)
+                    tmp.append(label)
+                    label.grid(row=2, column=c)
                 label = tk.Label(master=frame, text=str(self.b.bit_array[i]))
-                label.grid(row=row_b, column=0)
+                tmp.append(label)
+                label.grid(row=row_b, column=c)
                 c+=1
+            self.IList.append(tmp)
+            tmp = []
                
     def error_rate(self):
+        number = int(self.entry.get())
+        print(number)
+        subset = random.sample(self.indices, number)
         counter = 0
-        for i in self.indices:
+        for i in subset:
+            for label in self.IList[i]:
+                label['background'] = 'orange'
             if self.a.bit_array[i]!=self.b.bit_array[i]:
                 counter+=1
-        error=float(counter)/float(len(self.indices))
-        print(error)
+        error=float(counter)/float(len(subset))
+        self.phase3_frame = tk.Frame(master=self.process_frame)
+        self.phase3_frame.grid(row=2, column=0)
+        error_label = tk.Label(master=self.phase3_frame, text = 'The error rate is ' + str(error) + '. Do you want to abort or continue with postprocessing?' )
+        error_label.grid(row=0, column=0)
+        button_frame = tk.Frame(master=self.phase3_frame)
+        button_frame.grid(row=1, column=0)
+        button_abort = tk.Button(master=button_frame, text = 'Abort', command = self.abort)
+        button_abort.grid(row=0, column=0)
+        button_continue = tk.Button(master=button_frame, text = 'Continue with postprocessing', command = self.go_to_next_phase)
+        button_continue.grid(row=0,column=1)
                 
 
     def postprocessing(self):
@@ -306,7 +330,7 @@ class System:
         print("basis",self.a.basis_array)
         print("bits", self.b.bit_array)
         print("basis",self.b.basis_array)
-    def exit_program(self):
+    def abort(self):
         pass
     
 
