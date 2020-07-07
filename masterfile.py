@@ -90,7 +90,7 @@ class Eve(Person):
             return rho
 
 class System:
-    def __init__(self, eavesdropper=False, percentageOfEavesdropping=0.3):
+    def __init__(self, eavesdropper=False, percentageOfEavesdropping=1):
         self.b = Bob()
         self.a = Alice()
         self.name_list = ["Alice"]
@@ -109,9 +109,10 @@ class System:
         self.ABList = []
         self.EList = []
         self.IList = []
-        self.two_values = None
+        self.two_values = []
         self.final_key_alice = []
         self.final_key_bob = []
+        self.number_of_error_steps = 0
         self.initializeTkinter()
         
 
@@ -127,7 +128,9 @@ class System:
             frame = tk.Frame(
                 master=self.phase1_frame,
                 relief=tk.RAISED,
-                borderwidth=1
+                borderwidth=1,
+                width = 10,
+                height =7
             )
             frame.grid(row=self.name_list.index(name), column=0)
             label = tk.Label(master=frame, text=name)
@@ -220,6 +223,14 @@ class System:
             self.btn_2['text'] = 'All error correction at once'
             self.btn_1['command'] = self.error_correction_one_step
             self.btn_2['command'] = self.error_correction
+            self.phase4_frame = tk.Frame(master=self.process_frame)
+            self.phase4_frame.grid(row=4,column=0)
+            label = tk.Label(master=self.phase4_frame, text="Shared Key")
+            label.grid(row=0,column=0)
+            label_a = tk.Label(master=self.phase4_frame, text='Alice')
+            label_a.grid(row=1,column=0)
+            label_a = tk.Label(master=self.phase4_frame, text='Bob')
+            label_a.grid(row=2,column=0)
         elif self.phase ==4:
             self.phase_label['text'] = 'Phase 5: Privacy amplification'
             self.btn_1['text'] = 'Compare bases'
@@ -302,7 +313,7 @@ class System:
                 label = tk.Label(master=frame, text=str(self.b.bit_array[i]))
                 tmp.append(label)
                 label.grid(row=row_b, column=c)
-                c+=1
+                c+=1 
             self.IList.append(tmp)
             tmp = []
                
@@ -373,13 +384,15 @@ class System:
         self.go_to_next_phase()
     
     def error_correction_one_step(self):
-        if self.two_values !=None:
-            for label in self.IList[self.two_values[0]]:
-                label['background']='white'
-            for label in self.IList[self.two_values[1]]:
-                label['background']='white'
+        
+        for item in self.two_values:
+            print('entered')
+            for label in self.IList[item]:
+                label['background']='yellow'
+        print('exited')
         if len(self.indices)>=2:            
             self.two_values = random.sample(self.indices, 2)
+            print(self.two_values)
             for i in self.two_values:
                 for label in self.IList[self.indices.index(i)]:
                     label['background']='orange'
@@ -388,12 +401,23 @@ class System:
             print("alice", value_alice)
             print("bob", value_bob)
             if value_alice==value_bob:
+                v_alice = self.a.bit_array[self.two_values[0]]
+                v_bob = self.b.bit_array[self.two_values[0]]
                 self.final_key_alice.append(self.a.bit_array[self.two_values[0]])
                 self.final_key_bob.append(self.b.bit_array[self.two_values[0]])
+                label_a = tk.Label(master = self.phase4_frame, text = str(v_alice))
+                label_a.grid(row=1, column=1+self.number_of_error_steps)
+                label_a = tk.Label(master = self.phase4_frame, text = str(v_bob))
+                label_a.grid(row=2, column=1+self.number_of_error_steps)
+                self.number_of_error_steps +=1
             else:
                 pass
-            self.indices = self.indices.remove(self.two_values[0])
-            self.indices = self.indices.remove(self.two_values[1])
+            tmp1 = self.indices.index(self.two_values[0])
+            tmp2 = self.indices.index(self.two_values[1])
+            self.indices.remove(self.two_values[0])
+            self.indices.remove(self.two_values[1])
+            self.two_values[0] = tmp1
+            self.two_values[1] = tmp2
         else:
             print("not enough values")
         
@@ -401,7 +425,8 @@ class System:
         
         
     def error_correction(self):
-        pass
+        while len(self.indices)>=2:
+            self.error_correction_one_step()
                 
 
     def postprocessing(self):
