@@ -109,6 +109,7 @@ class System:
         self.ABList = []
         self.EList = []
         self.IList = []
+        self.PList = []
         self.two_values = []
         self.final_key_alice = []
         self.final_key_bob = []
@@ -168,13 +169,15 @@ class System:
         self.btn_2.grid(row=2,column=0)
         self.main_label = tk.Label(master= self.menu_frame, text="Number of cycles")
         self.main_label.grid(row=3,column=0)
+        self.empty_space = tk.Label(master = self.menu_frame, width=25,
+                    height=5)
         self.btn_3 = tk.Button(master=self.menu_frame,
                     text="Go to next phase",
                     width=25,
                     height=5,
                     command = self.go_to_next_phase
                     )
-        self.btn_3.grid(row=5,column=0)
+        self.empty_space.grid(row=5,column=0)
         self.btn_4 = tk.Button(master=self.menu_frame,
                     text="Exit",
                     width=25,
@@ -211,16 +214,26 @@ class System:
         if self.phase ==1:
             self.phase_label['text'] = 'Phase 2: Key Sifting'
             self.btn_1['text'] = 'Compare bases'
+            self.btn_2.grid_remove()
+            self.btn_3.grid_forget()
+            self.empty_space2 = tk.Label(master = self.menu_frame, width=25,
+                    height=5)
+            self.empty_space2.grid(row=2, column=0)
+            self.empty_space.grid(row=5, column =0)
             self.btn_1['command'] = self.compare_bases
         elif self.phase ==2:
             self.phase_label['text'] = 'Phase 3: Error rate'
             self.btn_1['text'] = 'Compute error rate'
             self.main_label['text'] = 'Choose number of samples'
             self.btn_1['command'] = self.error_rate
+            self.btn_3.grid_forget()
+            self.empty_space.grid(row=5, column =0)
         elif self.phase ==3:
             self.phase_label['text'] = 'Phase 4: Error correction'
             self.btn_1['text'] = 'One error correction step'
+            self.empty_space2.grid_remove()
             self.btn_2['text'] = 'All error correction at once'
+            self.btn_2.grid(row=2,column=0)
             self.btn_1['command'] = self.error_correction_one_step
             self.btn_2['command'] = self.error_correction
             self.phase4_frame = tk.Frame(master=self.process_frame)
@@ -233,12 +246,26 @@ class System:
             label_a.grid(row=2,column=0)
         elif self.phase ==4:
             self.phase_label['text'] = 'Phase 5: Privacy amplification'
-            self.btn_1['text'] = 'Compare bases'
-            self.btn_1['command'] = self.compare_bases()
-        elif self.phase ==5:
-            self.phase_label['text'] = 'Congratulations. You have a shared private key!'
-            self.btn_1['text'] = 'Compare bases'
-            self.btn_1['command'] = self.compare_bases()
+            self.btn_1['text'] = 'One privacy amplification step'
+            self.btn_2['text'] = 'All privacy amplification at once'
+            self.btn_1['command'] = self.privacy_amplification_one_step
+            self.btn_2['command'] = self.privacy_amplification
+            self.btn_3['text'] = 'Restart'
+            self.btn_3['command'] = self.restart
+            
+            self.phase5_frame = tk.Frame(master=self.process_frame)
+            self.phase5_frame.grid(row=5,column=0)
+            label = tk.Label(master=self.phase5_frame, text="Shared Key")
+            label.grid(row=0,column=0)
+            label_a = tk.Label(master=self.phase5_frame, text='Alice')
+            label_a.grid(row=1,column=0)
+            label_a = tk.Label(master=self.phase5_frame, text='Bob')
+            label_a.grid(row=2,column=0)
+            
+            self.indices = list(range(len(self.final_key_alice)))
+            self.two_values = []
+            self.number_of_error_steps = 0
+
 
     def displaying(self, number):
         objects = []
@@ -272,6 +299,9 @@ class System:
         
         self.ABList.append(objects)
         self.EList.append(eobjects)
+        if self.currentStep == 0:
+            self.empty_space.grid_forget()
+            self.btn_3.grid(row=5, column=0)
 
     def compare_bases(self):
         for i in range(len(self.a.basis_array)):
@@ -316,6 +346,8 @@ class System:
                 c+=1 
             self.IList.append(tmp)
             tmp = []
+        self.empty_space.grid_forget()
+        self.btn_3.grid(row=5, column=0)
                
     def error_rate(self):
         number = int(self.entry.get())
@@ -338,6 +370,8 @@ class System:
         button_abort.grid(row=0, column=0)
         button_continue = tk.Button(master=self.button_frame, text = 'Continue with postprocessing', command = self.continue_postprocessing)
         button_continue.grid(row=0,column=1)
+        #self.empty_space.grid_forget()
+        #self.btn_3.grid(row=5, column=0)
         
     def continue_postprocessing(self):
         self.button_frame.grid_forget()
@@ -381,60 +415,118 @@ class System:
                 self.IList.append(tmp)
                 tmp = []
         self.indices = newlist
+        self.indices = list(range(len(self.indices)))
         self.go_to_next_phase()
     
     def error_correction_one_step(self):
         
+        
         for item in self.two_values:
-            print('entered')
+            #print('entered')
+            print(item)
             for label in self.IList[item]:
                 label['background']='yellow'
-        print('exited')
+        print(self.indices)
         if len(self.indices)>=2:            
             self.two_values = random.sample(self.indices, 2)
             print(self.two_values)
+            print(self.two_values)
             for i in self.two_values:
-                for label in self.IList[self.indices.index(i)]:
+                for label in self.IList[i]:#self.indices.index(i)]:
                     label['background']='orange'
             value_alice = self.a.bit_array[self.two_values[0]]^self.a.bit_array[self.two_values[1]]
             value_bob = self.b.bit_array[self.two_values[0]]^self.b.bit_array[self.two_values[1]]
             print("alice", value_alice)
             print("bob", value_bob)
             if value_alice==value_bob:
+                tmp = []
                 v_alice = self.a.bit_array[self.two_values[0]]
                 v_bob = self.b.bit_array[self.two_values[0]]
                 self.final_key_alice.append(self.a.bit_array[self.two_values[0]])
                 self.final_key_bob.append(self.b.bit_array[self.two_values[0]])
                 label_a = tk.Label(master = self.phase4_frame, text = str(v_alice))
                 label_a.grid(row=1, column=1+self.number_of_error_steps)
-                label_a = tk.Label(master = self.phase4_frame, text = str(v_bob))
-                label_a.grid(row=2, column=1+self.number_of_error_steps)
+                label_b = tk.Label(master = self.phase4_frame, text = str(v_bob))
+                label_b.grid(row=2, column=1+self.number_of_error_steps)
+                tmp.append(label_a)
+                tmp.append(label_b)
+                self.PList.append(tmp)
                 self.number_of_error_steps +=1
             else:
                 pass
-            tmp1 = self.indices.index(self.two_values[0])
-            tmp2 = self.indices.index(self.two_values[1])
+            tmp1 = self.two_values[0]
+            tmp2 = self.two_values[1]
             self.indices.remove(self.two_values[0])
             self.indices.remove(self.two_values[1])
             self.two_values[0] = tmp1
             self.two_values[1] = tmp2
+            print(self.indices)
         else:
             print("not enough values")
-        
+            self.finish_routine()
+        ####continue here
+        if self.number_of_error_steps <=1:
+            self.empty_space.grid_forget()
+            self.btn_3.grid(row=5, column=0)
             
         
         
     def error_correction(self):
         while len(self.indices)>=2:
             self.error_correction_one_step()
-                
+        for item in self.two_values:
+            #print('entered')
+            print(item)
+            for label in self.IList[item]:
+                label['background']='yellow'
+        self.finish_routine()
+            
+    def privacy_amplification_one_step(self):
+        for item in self.two_values:
+            #print('entered')
+            print(item)
+            for label in self.PList[item]:
+                label['background']='yellow'
+        print(self.indices)
+        if len(self.indices)>=2:            
+            self.two_values = random.sample(self.indices, 2)
+            print(self.two_values)
+            for i in self.two_values:
+                for label in self.PList[i]:
+                    label['background']='orange'
+            value_alice = self.a.bit_array[self.two_values[0]]^self.a.bit_array[self.two_values[1]]
+            value_bob = self.b.bit_array[self.two_values[0]]^self.b.bit_array[self.two_values[1]]
+            self.final_key_alice.append(value_alice)
+            self.final_key_bob.append(value_bob)
+            label_a = tk.Label(master = self.phase5_frame, text = str(value_alice))
+            label_a.grid(row=1, column=1+self.number_of_error_steps)
+            label_b = tk.Label(master = self.phase5_frame, text = str(value_bob))
+            label_b.grid(row=2, column=1+self.number_of_error_steps)
+            self.number_of_error_steps +=1
 
-    def postprocessing(self):
-        self.compare_basis()
-        print("bits", self.a.bit_array)
-        print("basis",self.a.basis_array)
-        print("bits", self.b.bit_array)
-        print("basis",self.b.basis_array)
+            tmp1 = self.two_values[0]
+            tmp2 = self.two_values[1]
+            self.indices.remove(self.two_values[0])
+            self.indices.remove(self.two_values[1])
+            self.two_values[0] = tmp1
+            self.two_values[1] = tmp2
+            print(self.indices)
+        else:
+            print("not enough values")   
+     
+    def privacy_amplification(self):
+        while len(self.indices)>=2:
+            self.privacy_amplification_one_step() 
+        for item in self.two_values:
+            #print('entered')
+            print(item)
+            for label in self.PList[item]:
+                label['background']='yellow'
+
+    def finish_routine(self):
+        pass
+    def restart(self):
+        pass
     def abort(self):
         pass
     
