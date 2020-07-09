@@ -25,6 +25,20 @@ class Channel:
         result = self.b.one_step(self.qubit)
         tmp4, tmp5 = self.b.getInfo(i)
         return [[tmp, tmp1], [tmp2, tmp3], [tmp4, tmp5]]
+    def compareBasis(self, number):
+        if self.a.basis_array[number]==self.b.basis_array[number]:
+            return True
+        else:
+            self.a.discardBit(number)
+            self.b.discardBit(number)
+            self.e.discardBit(number)
+            return False
+    def compareBasisE(self, number):
+        if self.e !=None:
+            if self.a.basis_array[number]==self.e.basis_array[number] and self.e.bit_array[number]!=-1:
+                return True
+            else:
+                return False
         
         
         
@@ -117,7 +131,11 @@ class System:
             self.channel = Channel(number)
             if number >0:
                 self.eavesdropper = True
+                self.indexList = [0,1,4,5]
+                self.eList = [2,3]
             else:
+                self.indexList = [2,3]
+                self.eList = []
                 self.eavesdropper = False
             self.b = Bob()
             self.a = Alice()
@@ -286,43 +304,44 @@ class System:
             self.btn_3.grid(row=4, column=0)
 
     def compare_bases(self):
-        for i in range(len(self.a.basis_array)):
-            if self.a.basis_array[i]==self.b.basis_array[i]:
-                self.indices.append(i)
-                for element in self.ABList[i]:
-                    element['background']='green2'
-            if self.e.basis_array[i]==self.a.basis_array[i]:
-                for element in self.EList[i]:
-                    element['background']='pale green'
+        for i in range(self.currentStep):
+            if self.channel.compareBasis(i):
+                for n in self.indexList:
+                    self.phase1Objects[i][n]['background']='green2'
+                if self.eavesdropper:
+                    if self.channel.compareBasisE(i):
+                        for n in self.eList:
+                            self.phase1Objects[i][n]['background']='pale green'
                     
-        frame = tk.Frame(master=self.process_frame)
-        frame.grid(row=1,column=0)
-        label = tk.Label(master=frame, text="Shared Key")
-        label.grid(row=0,column=1)
-        label_a = tk.Label(master=frame, text='Alice')
-        label_a.grid(row=1,column=1)
+        self.phase2_frame = tk.Frame(master=self.process_frame)
+        self.phase2_frame.grid(row=1,column=0)
+        label = tk.Label(master=self.phase2_frame, text="Shared Key")
+        label.grid(row=0,column=0)
+        label_a = tk.Label(master=self.phase2_frame, text='Alice')
+        label_a.grid(row=1,column=0)
         if self.eavesdropper:
-            label_e = tk.Label(master=frame, text='Eve')
-            label_e.grid(row=2, column=1)
+            label_e = tk.Label(master=self.phase2_frame, text='Eve')
+            label_e.grid(row=2, column=0)
             row_b=3
         else:
             row_b=2
-        label_b = tk.Label(master=frame, text='Bob')
-        label_b.grid(row=row_b, column=1)
+        label_b = tk.Label(master=self.phase2_frame, text='Bob')
+        label_b.grid(row=row_b, column=0)
         c =5
         tmp = []
+        
         for i in range(len(self.a.basis_array)):
             if self.a.basis_array[i]==self.b.basis_array[i]:
                 #frame = tk.Frame(master=self.process_frame)
                 #frame.grid(row=4,column=c+2)
-                label = tk.Label(master=frame, text=str(self.a.bit_array[i]))
+                label = tk.Label(master=self.phase2_frame, text=str(self.a.bit_array[i]))
                 tmp.append(label)
                 label.grid(row=1, column=c)
                 if self.eavesdropper and self.e.bit_array[i]!=-1:
-                    label = tk.Label(master=frame, text=str(self.e.bit_array[i]))
+                    label = tk.Label(master=self.phase2_frame, text=str(self.e.bit_array[i]))
                     tmp.append(label)
                     label.grid(row=2, column=c)
-                label = tk.Label(master=frame, text=str(self.b.bit_array[i]))
+                label = tk.Label(master=self.phase2_frame, text=str(self.b.bit_array[i]))
                 tmp.append(label)
                 label.grid(row=row_b, column=c)
                 c+=1 
