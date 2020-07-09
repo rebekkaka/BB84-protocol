@@ -63,7 +63,8 @@ class Person:
             bit = bit_
             basis = basis_
         return self.get_density_matrix(bit, basis)
-
+    def getInfo(self, number):
+        return self.bit_array[number], self.basis_array[number]
 
     
 class Bob(Person):

@@ -5,58 +5,45 @@ from PIL import Image, ImageTk
 from people import *
 
 
-class System:
-    def __init(self):
-        
-        self.channel = None
-        self.initializeTkinter()
-        
-    def initializeTkinter(self):
-        self.window = tk.Tk()
-        self.menu_frame = tk.Frame(master=self.window)
-        self.menu_frame.grid(row=0, column =0)
-        self.phase_label = tk.Label(master = self.menu_frame, text = 'Hey, welcome to this simulation of the BB84 protocol. Please select the eavesdropping rate (e.g. 0 for no eavesdropper, 0.3 for 30% eavesdropping):')
-        self.phase_label.grid(row=0, column = 0)
-        self.entry = tk.Entry(master=self.menu_frame)
-        self.entry.grid(row=1,column=0)
-        self.btn_3 = tk.Button(master=self.menu_frame,
-                    text="Start",
-                    width=25,
-                    height=5,
-                    command = self.startup
-                    )
-        self.window.mainloop()
-        
-        
-    def startup(self):
-        number = int(self.entry.get())
-        self.channel = Channel( number)
-        
-        
-
-        
-        
-
 class Channel:
-    def __init__(self, percentageOfEavesdropping=1):
+    def __init__(self, eavesdroppingRate):
+        self.eavesdroppingRate = eavesdroppingRate
         self.b = Bob()
         self.a = Alice()
-        self.name_list = ["Alice"]
-        self.object_list = [self.a]
-        if percentageOfEavesdropping == 0:
-            self.eavesdropper = False
+        if self.eavesdroppingRate > 0:
+            self.e = Eve(eavesdroppingRate)
         else:
-            self.eavesdropper = True
-        if self.eavesdropper:
-            self.e = Eve(percentageOfEavesdropping)
-            self.name_list.append("Eve")
-            self.object_list.append(self.e)
-        self.name_list.append("Bob")
-        self.object_list.append(self.b)
+            self.e = None
+    
+    
+    def simulate_one_cycle(self, i):
+        self.qubit = self.a.one_step()
+        tmp, tmp1 = self.a.getInfo(i)
+        if self.e!=None:
+            self.qubit = self.e.one_step(self.qubit)
+            tmp2, tmp3 = self.e.getInfo(i)
+        result = self.b.one_step(self.qubit)
+        tmp4, tmp5 = self.b.getInfo(i)
+        return [[tmp, tmp1], [tmp2, tmp3], [tmp4, tmp5]]
+        
+        
+        
+
+        
+        
+
+        
+        
+
+class System:
+    def __init__(self):#, percentageOfEavesdropping=1):
+        
         self.currentStep = 0
+        self.channel = None
         self.phase = 0
         self.indices = []
         self.frameList = []
+        self.phase1Objects = []
         self.ABList = []
         self.EList = []
         self.IList = []
@@ -72,23 +59,50 @@ class Channel:
         self.window = tk.Tk()
         self.menu_frame = tk.Frame(master=self.window)
         self.menu_frame.grid(row=0, column =0)
-        self.phase_label = tk.Label(master = self.menu_frame, text = 'Hey, welcome to this simulation of the BB84 protocol. Please select the eavesdropping rate (e.g. 0 for no eavesdropper, 0.3 for 30% eavesdropping):')
+        self.process_frame = tk.Frame(master=self.window)
+        self.process_frame.grid(row=0, column =1)
+        self.phase_label = tk.Label(master = self.menu_frame, text = 'Hey, welcome to this simulation of the BB84 protocol. Please select the eavesdropping rate (e.g. 0 for no eavesdropper, 0.3 for 30% eavesdropping):',
+                                    width=25, height=25)
         self.phase_label.grid(row=0, column = 0)
-
+        self.entry_frame = tk.Frame(master=self.menu_frame, width=25, height=3)
+        self.entry_frame.grid(row=3, column=0)
+        self.main_label = tk.Label(master= self.entry_frame, text="Enter eavesdropping rate")
+        self.main_label.grid(row=0,column=0)
+        self.entry = tk.Entry(master=self.entry_frame)
+        self.entry.grid(row=1,column=0)
+        self.empty_space = tk.Label(master = self.menu_frame, width=25,
+                                        height=5)
+        self.empty_space.grid(row=1, column=0)
+        self.empty_space2 = tk.Label(master = self.menu_frame, width=25,
+                                             height=5)
+        self.empty_space2.grid(row=2, column=0)
+        
+        
+        self.btn_3 = tk.Button(master=self.menu_frame,
+                                   text="Start",
+                                   width=25,
+                                   height=5,
+                                   command = self.go_to_next_phase
+                                   )
+        self.btn_3.grid(row=4, column=0)
+        
+        
+        self.btn_4 = tk.Button(master=self.menu_frame,
+                               text="Exit",
+                               width=25,
+                               height=5,
+                               command = self.window.destroy
+                               )
+        self.btn_4.grid(row=5,column=0)
+        
 
         self.window.mainloop()
 
 
+
     def simulate_one_cycle(self):
-        self.qubit = self.a.one_step()
-        #print(1,self.qubit)
-        if self.eavesdropper:
-            #print(2,self.qubit)
-            self.qubit = self.e.one_step(self.qubit)
-            #print(3,self.qubit)
-        result = self.b.one_step(self.qubit)
-        #print(result)
-        self.displaying(self.currentStep)
+        plottingList = self.channel.simulate_one_cycle(self.currentStep)
+        self.displaying(self.currentStep, plottingList)
         self.currentStep += 1
 
     def simulate_multiple_cycle(self):
@@ -98,34 +112,51 @@ class Channel:
             self.simulate_one_cycle()
     def go_to_next_phase(self):
         if self.phase ==0:
+            number = float(self.entry.get())
+            self.entry.delete(0,tk.END)
+            self.channel = Channel(number)
+            if number >0:
+                self.eavesdropper = True
+            else:
+                self.eavesdropper = False
+            self.b = Bob()
+            self.a = Alice()
+            self.name_list = ["Alice"]
+            self.object_list = [self.a]
+            if self.eavesdropper:
+                self.e = Eve(number)
+                self.name_list.append("Eve")
+                self.object_list.append(self.e)
+            self.name_list.append("Bob")
+            self.object_list.append(self.b)
+            
+            
             self.phase1_frame =tk.Frame(master=self.process_frame)
             self.phase1_frame.grid(row=0, column=0)
-            for name in self.name_list:
-                frame = tk.Frame(
-                        master=self.phase1_frame,
-                        relief=tk.RAISED,
-                        borderwidth=1,
-                        width = 10,
-                        height =7
-                        )
-                frame.grid(row=self.name_list.index(name), column=0)
-                label = tk.Label(master=frame, text=name)
-                label.pack()
-                frame2 = tk.Frame(
-                        master=self.phase1_frame,
-                        relief=tk.RAISED,
-                        borderwidth=1
-                        )
-                frame2.grid(row=self.name_list.index(name), column=1)
-                label = tk.Label(master=frame2, text="Bit")
-                label.pack()
-                label2 = tk.Label(master=frame2, text="Basis")
-                label2.pack()
-                label3 = tk.Label(master=frame2, text="Qubit")
-                label3.pack()
-            
-            self.phase_label['text'] = "Phase 1: Transmission of qubits"
 
+            label = tk.Label(self.phase1_frame, text='Alice', width = 10, height = 2)
+            label.grid(row=0,column=0)
+            label_b = tk.Label(self.phase1_frame, text='Bob', width = 10, height = 2)
+            text = ["Bit", "Basis", "Qubit"]  
+            if self.eavesdropper:
+                label = tk.Label(self.phase1_frame, text='Eve', width = 10, height = 2)
+                label.grid(row=3,column=0)
+                label_b.grid(row=6,column=0)
+                labels = text * 2
+            else:
+                label_b(row=3,column =0)
+                labels = text
+            labels = labels + text[:2]
+            for i in range(len(labels)):
+                if i%3==2:
+                    h = 3
+                else:
+                    h=2
+                label = tk.Label(master=self.phase1_frame, text=labels[i], width = 10, height = h)
+                label.grid(row = i, column = 1)
+                
+            self.phase_label['text'] = "Phase 1: Transmission of qubits"
+            self.empty_space.grid_forget()
             self.btn_1 = tk.Button(master=self.menu_frame,
                                    text="Simulate one cycle",
                                    width=25,
@@ -135,6 +166,7 @@ class Channel:
                                    command = self.simulate_one_cycle
                                    )
             self.btn_1.grid(row=1,column=0)
+            self.empty_space2.grid_forget()
             self.btn_2 = tk.Button(master=self.menu_frame,
                                    text="Simulate multiple cycles",
                                    width=25,
@@ -142,37 +174,20 @@ class Channel:
                                    command = self.simulate_multiple_cycle
                                    )
             self.btn_2.grid(row=2,column=0)
-            self.entry_frame = tk.Frame(master=self.menu_frame, width=25, height=3)
-            self.entry_frame.grid(row=3, column=0)
-            self.main_label = tk.Label(master= self.entry_frame, text="Number of cycles")
-            self.main_label.grid(row=0,column=0)
-            self.empty_space = tk.Label(master = self.menu_frame, width=25,
-                                        height=5)
+            self.main_label['text']="Number of cycles"
+            
             self.empty_space3 = tk.Label(master = self.entry_frame, width=25,
                                          height=3)
-            self.btn_3 = tk.Button(master=self.menu_frame,
-                                   text="Go to next phase",
-                                   width=25,
-                                   height=5,
-                                   command = self.go_to_next_phase
-                                   )
+            self.btn_3['text']="Go to next phase"
+            self.btn_3.grid_forget()
             self.empty_space.grid(row=4,column=0)
-            self.btn_4 = tk.Button(master=self.menu_frame,
-                                   text="Exit",
-                                   width=25,
-                                   height=5,
-                                   command = self.window.destroy
-                                   )
-            self.btn_4.grid(row=5,column=0)
-            self.entry = tk.Entry(master=self.entry_frame)
-            self.entry.grid(row=1,column=0)
+            
+
         elif self.phase ==1:
             self.phase_label['text'] = 'Phase 2: Key Sifting'
             self.btn_1['text'] = 'Compare bases'
             self.btn_2.grid_remove()
             self.btn_3.grid_forget()
-            self.empty_space2 = tk.Label(master = self.menu_frame, width=25,
-                                             height=5)
             self.empty_space2.grid(row=2, column=0)
             self.empty_space.grid(row=5, column =0)
             self.btn_1['command'] = self.compare_bases
@@ -234,38 +249,38 @@ class Channel:
         self.phase += 1
 
 
-    def displaying(self, number):
+    def displaying(self, number, plottingList):
         objects = []
         eobjects = []
-        for n in self.object_list:
-            if(n.bit_array[number] != -1):
-                frame = tk.Frame(master=self.phase1_frame)
-                self.frameList.append(frame)
-                frame.grid(row=self.object_list.index(n), column=3+number)
-                label = tk.Label(master=frame, text=str(n.bit_array[number]))
-                
-                label.pack()
-                if n.basis_array[number]==0:
+        rn=0
+        for i in plottingList:
+            if i[0]!=-1:
+                label = tk.Label(master=self.phase1_frame, text=str(i[0]), width=2, height=2)
+                label.grid(row=rn, column=2+number)
+                objects.append(label)
+                rn+=1
+                if i[1]==0:
                     basis = '+'
-                elif n.basis_array[number]==1:
-                    basis = 'x'
-                label2 = tk.Label(master=frame, text=basis)
-                if n.name!="Eve":
-                    objects.append(label)
-                    objects.append(label2)
                 else:
-                    eobjects.append(label)
-                    eobjects.append(label2)
-                label2.pack()
-                name = str(n.bit_array[number])+str(n.basis_array[number])+".png"
-                load = Image.open(name)
-                render = ImageTk.PhotoImage(load)
-                img = tk.Label(master=frame, image=render)
-                img.image = render
-                img.pack()
-        
-        self.ABList.append(objects)
-        self.EList.append(eobjects)
+                    basis = 'x'
+                label2 = tk.Label(master=self.phase1_frame, text=basis, width=2, height=2)
+                label2.grid(row=rn, column=2+number)
+                rn+=1
+                objects.append(label2)
+                if i!=len(plottingList)-1:
+                    name = str(i[0])+str(i[1])+".png"
+                    load = Image.open(name)
+                    render = ImageTk.PhotoImage(load)
+                    img = tk.Label(master=self.phase1_frame, image=render)
+                    img.image = render
+                    img.grid(row=rn, column=2+number)
+                    rn+=1
+            else:
+                objects.append(None)
+                objects.append(None)
+                rn+=3
+        self.phase1Objects.append(objects)       
+
         if self.currentStep == 0:
             self.empty_space.grid_forget()
             self.btn_3.grid(row=4, column=0)
@@ -511,4 +526,4 @@ class Channel:
         pass
     
 
-test_system = Channel()
+test_system = System()
