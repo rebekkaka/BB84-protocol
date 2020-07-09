@@ -1,102 +1,53 @@
 import random
 import numpy as np
 import tkinter as tk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk 
+from people import *
 
-class Person:
-    def __init__(self, name):
-        self.bit_array = []
-        self.basis_array = []
-        self.name = name
-
-    def choose_basis(self):
-        if random.random()<0.5:
-            return 0;
-        else:
-            return 1;
-
-    def get_operator(self, basis):
-        if basis==0:
-            A = np.array([[0, 0], [0, 1]])
-        else:
-            A = np.array([[0.5,-0.5],[-0.5,0.5]])
-        return A
-
-    def get_density_matrix(self, bit, basis):
-        if bit==0 and basis==0:
-            rho = np.array([[1,0],[0,0]])
-        elif bit==1 and basis==0:
-            rho = np.array([[0,0],[0,1]])
-        elif bit==0 and basis==1:
-            rho = np.array([[0.5,0.5],[0.5,0.5]])
-        else:
-            rho = np.array([[0.5,-0.5],[-0.5,0.5]])
-        return rho
-    def measure(self,rho):
-        basis = self.choose_basis()
-        self.basis_array.append(basis)
-        A = self.get_operator(basis)
-        value = np.trace(np.matmul(rho, A))
-        r = random.random()
-        if r<value:
-            result = 1
-        else:
-            result = 0
-        self.bit_array.append(result)
-        return result, basis
-    def create_qubit(self, bit_=None, basis_=None):
-        if bit_==None or basis_==None:
-            if random.random()<0.5:
-                bit = 0
-            else:
-                bit = 1
-            self.bit_array.append(bit)
-            basis = self.choose_basis()
-            self.basis_array.append(basis)
-        else:
-            bit = bit_
-            basis = basis_
-        return self.get_density_matrix(bit, basis)
-
-
-    
-class Bob(Person):
-    def __init__(self):
-        super().__init__("Bob")
-    def one_step(self, rho):
-        return super().measure(rho)
-
-class Alice(Person):
-    def __init__(self):
-        super().__init__("Alice")
-    def one_step(self):
-        return super().create_qubit()
-
-class Eve(Person):
-    def __init__(self, percentage):
-        super().__init__("Eve")
-        self.percentage = percentage
-    def one_step(self, rho):
-        if random.random()< self.percentage:
-            #print("rho",rho)
-            bit, basis = super().measure(rho)
-            #print(bit,basis)
-            qubit = super().create_qubit(bit,basis)
-            #print(qubit)
-            return qubit
-        else:
-            self.bit_array.append(-1)
-            self.basis_array.append(-1)
-            return rho
 
 class System:
-    def __init__(self, eavesdropper=False, percentageOfEavesdropping=1):
+    def __init(self):
+        
+        self.channel = None
+        self.initializeTkinter()
+        
+    def initializeTkinter(self):
+        self.window = tk.Tk()
+        self.menu_frame = tk.Frame(master=self.window)
+        self.menu_frame.grid(row=0, column =0)
+        self.phase_label = tk.Label(master = self.menu_frame, text = 'Hey, welcome to this simulation of the BB84 protocol. Please select the eavesdropping rate (e.g. 0 for no eavesdropper, 0.3 for 30% eavesdropping):')
+        self.phase_label.grid(row=0, column = 0)
+        self.entry = tk.Entry(master=self.menu_frame)
+        self.entry.grid(row=1,column=0)
+        self.btn_3 = tk.Button(master=self.menu_frame,
+                    text="Start",
+                    width=25,
+                    height=5,
+                    command = self.startup
+                    )
+        self.window.mainloop()
+        
+        
+    def startup(self):
+        number = int(self.entry.get())
+        self.channel = Channel( number)
+        
+        
+
+        
+        
+
+class Channel:
+    def __init__(self, percentageOfEavesdropping=1):
         self.b = Bob()
         self.a = Alice()
         self.name_list = ["Alice"]
         self.object_list = [self.a]
-        self.eavesdropper = eavesdropper
-        if eavesdropper:
+        if percentageOfEavesdropping == 0:
+            self.eavesdropper = False
+        else:
+            self.eavesdropper = True
+        if self.eavesdropper:
             self.e = Eve(percentageOfEavesdropping)
             self.name_list.append("Eve")
             self.object_list.append(self.e)
@@ -121,72 +72,8 @@ class System:
         self.window = tk.Tk()
         self.menu_frame = tk.Frame(master=self.window)
         self.menu_frame.grid(row=0, column =0)
-        self.process_frame = tk.Frame(master=self.window)
-        self.process_frame.grid(row=0, column =1)
-        self.phase1_frame =tk.Frame(master=self.process_frame)
-        self.phase1_frame.grid(row=0, column=0)
-        for name in self.name_list:
-            frame = tk.Frame(
-                master=self.phase1_frame,
-                relief=tk.RAISED,
-                borderwidth=1,
-                width = 10,
-                height =7
-            )
-            frame.grid(row=self.name_list.index(name), column=0)
-            label = tk.Label(master=frame, text=name)
-            label.pack()
-            frame2 = tk.Frame(
-                master=self.phase1_frame,
-                relief=tk.RAISED,
-                borderwidth=1
-            )
-            frame2.grid(row=self.name_list.index(name), column=1)
-            label = tk.Label(master=frame2, text="Bit")
-            label.pack()
-            label2 = tk.Label(master=frame2, text="Basis")
-            label2.pack()
-            label3 = tk.Label(master=frame2, text="Qubit")
-            label3.pack()
-            
-        self.phase_label = tk.Label(master = self.menu_frame, text = "Phase 1: Transmission of qubits")
+        self.phase_label = tk.Label(master = self.menu_frame, text = 'Hey, welcome to this simulation of the BB84 protocol. Please select the eavesdropping rate (e.g. 0 for no eavesdropper, 0.3 for 30% eavesdropping):')
         self.phase_label.grid(row=0, column = 0)
-        self.btn_1 = tk.Button(master=self.menu_frame,
-                    text="Simulate one cycle",
-                    width=25,
-                    height=5,
-                    bg="grey",
-                    fg="black",
-                    command = self.simulate_one_cycle
-                    )
-        self.btn_1.grid(row=1,column=0)
-        self.btn_2 = tk.Button(master=self.menu_frame,
-                    text="Simulate multiple cycles",
-                    width=25,
-                    height=5,
-                    command = self.simulate_multiple_cycle
-                    )
-        self.btn_2.grid(row=2,column=0)
-        self.main_label = tk.Label(master= self.menu_frame, text="Number of cycles")
-        self.main_label.grid(row=3,column=0)
-        self.empty_space = tk.Label(master = self.menu_frame, width=25,
-                    height=5)
-        self.btn_3 = tk.Button(master=self.menu_frame,
-                    text="Go to next phase",
-                    width=25,
-                    height=5,
-                    command = self.go_to_next_phase
-                    )
-        self.empty_space.grid(row=5,column=0)
-        self.btn_4 = tk.Button(master=self.menu_frame,
-                    text="Exit",
-                    width=25,
-                    height=5,
-                    command = self.window.destroy
-                    )
-        self.btn_4.grid(row=6,column=0)
-        self.entry = tk.Entry(master=self.menu_frame)
-        self.entry.grid(row=4,column=0)
 
 
         self.window.mainloop()
@@ -210,25 +97,104 @@ class System:
         for i in range(number):
             self.simulate_one_cycle()
     def go_to_next_phase(self):
-        self.phase += 1
-        if self.phase ==1:
+        if self.phase ==0:
+            self.phase1_frame =tk.Frame(master=self.process_frame)
+            self.phase1_frame.grid(row=0, column=0)
+            for name in self.name_list:
+                frame = tk.Frame(
+                        master=self.phase1_frame,
+                        relief=tk.RAISED,
+                        borderwidth=1,
+                        width = 10,
+                        height =7
+                        )
+                frame.grid(row=self.name_list.index(name), column=0)
+                label = tk.Label(master=frame, text=name)
+                label.pack()
+                frame2 = tk.Frame(
+                        master=self.phase1_frame,
+                        relief=tk.RAISED,
+                        borderwidth=1
+                        )
+                frame2.grid(row=self.name_list.index(name), column=1)
+                label = tk.Label(master=frame2, text="Bit")
+                label.pack()
+                label2 = tk.Label(master=frame2, text="Basis")
+                label2.pack()
+                label3 = tk.Label(master=frame2, text="Qubit")
+                label3.pack()
+            
+            self.phase_label['text'] = "Phase 1: Transmission of qubits"
+
+            self.btn_1 = tk.Button(master=self.menu_frame,
+                                   text="Simulate one cycle",
+                                   width=25,
+                                   height=5,
+                                   bg="grey",
+                                   fg="black",
+                                   command = self.simulate_one_cycle
+                                   )
+            self.btn_1.grid(row=1,column=0)
+            self.btn_2 = tk.Button(master=self.menu_frame,
+                                   text="Simulate multiple cycles",
+                                   width=25,
+                                   height=5,
+                                   command = self.simulate_multiple_cycle
+                                   )
+            self.btn_2.grid(row=2,column=0)
+            self.entry_frame = tk.Frame(master=self.menu_frame, width=25, height=3)
+            self.entry_frame.grid(row=3, column=0)
+            self.main_label = tk.Label(master= self.entry_frame, text="Number of cycles")
+            self.main_label.grid(row=0,column=0)
+            self.empty_space = tk.Label(master = self.menu_frame, width=25,
+                                        height=5)
+            self.empty_space3 = tk.Label(master = self.entry_frame, width=25,
+                                         height=3)
+            self.btn_3 = tk.Button(master=self.menu_frame,
+                                   text="Go to next phase",
+                                   width=25,
+                                   height=5,
+                                   command = self.go_to_next_phase
+                                   )
+            self.empty_space.grid(row=4,column=0)
+            self.btn_4 = tk.Button(master=self.menu_frame,
+                                   text="Exit",
+                                   width=25,
+                                   height=5,
+                                   command = self.window.destroy
+                                   )
+            self.btn_4.grid(row=5,column=0)
+            self.entry = tk.Entry(master=self.entry_frame)
+            self.entry.grid(row=1,column=0)
+        elif self.phase ==1:
             self.phase_label['text'] = 'Phase 2: Key Sifting'
             self.btn_1['text'] = 'Compare bases'
             self.btn_2.grid_remove()
             self.btn_3.grid_forget()
             self.empty_space2 = tk.Label(master = self.menu_frame, width=25,
-                    height=5)
+                                             height=5)
             self.empty_space2.grid(row=2, column=0)
             self.empty_space.grid(row=5, column =0)
             self.btn_1['command'] = self.compare_bases
+            self.main_label.grid_forget()
+            self.entry.grid_forget()
+            self.empty_space3.grid(row=0, column=0)
+            self.empty_space3.grid(row=0, column=0)
+        
         elif self.phase ==2:
             self.phase_label['text'] = 'Phase 3: Error rate'
             self.btn_1['text'] = 'Compute error rate'
             self.main_label['text'] = 'Choose number of samples'
             self.btn_1['command'] = self.error_rate
+            self.entry.grid(row=1,column=0)
+            self.main_label.grid(row=0, column=0)
+            self.empty_space3.grid_forget()
             self.btn_3.grid_forget()
-            self.empty_space.grid(row=5, column =0)
+            self.empty_space.grid(row=4, column =0)
         elif self.phase ==3:
+            self.main_label.grid_forget()
+            self.entry.grid_forget()
+            self.empty_space3.grid(row=0, column=0)
             self.phase_label['text'] = 'Phase 4: Error correction'
             self.btn_1['text'] = 'One error correction step'
             self.empty_space2.grid_remove()
@@ -250,8 +216,8 @@ class System:
             self.btn_2['text'] = 'All privacy amplification at once'
             self.btn_1['command'] = self.privacy_amplification_one_step
             self.btn_2['command'] = self.privacy_amplification
-            self.btn_3['text'] = 'Restart'
-            self.btn_3['command'] = self.restart
+            self.btn_3.grid_forget()
+            self.empty_space.grid(row=5, column=0)
             
             self.phase5_frame = tk.Frame(master=self.process_frame)
             self.phase5_frame.grid(row=5,column=0)
@@ -265,6 +231,7 @@ class System:
             self.indices = list(range(len(self.final_key_alice)))
             self.two_values = []
             self.number_of_error_steps = 0
+        self.phase += 1
 
 
     def displaying(self, number):
@@ -301,7 +268,7 @@ class System:
         self.EList.append(eobjects)
         if self.currentStep == 0:
             self.empty_space.grid_forget()
-            self.btn_3.grid(row=5, column=0)
+            self.btn_3.grid(row=4, column=0)
 
     def compare_bases(self):
         for i in range(len(self.a.basis_array)):
@@ -347,7 +314,7 @@ class System:
             self.IList.append(tmp)
             tmp = []
         self.empty_space.grid_forget()
-        self.btn_3.grid(row=5, column=0)
+        self.btn_3.grid(row=4, column=0)
                
     def error_rate(self):
         number = int(self.entry.get())
@@ -463,11 +430,10 @@ class System:
             print(self.indices)
         else:
             print("not enough values")
-            self.finish_routine()
-        ####continue here
-        if self.number_of_error_steps <=1:
             self.empty_space.grid_forget()
-            self.btn_3.grid(row=5, column=0)
+            self.btn_3.grid(row=4, column=0)
+            
+
             
         
         
@@ -479,7 +445,9 @@ class System:
             print(item)
             for label in self.IList[item]:
                 label['background']='yellow'
-        self.finish_routine()
+        self.empty_space.grid_forget()
+        self.btn_3.grid(row=4, column=0)
+        
             
     def privacy_amplification_one_step(self):
         for item in self.two_values:
@@ -513,6 +481,7 @@ class System:
             print(self.indices)
         else:
             print("not enough values")   
+            self.finish_routine()
      
     def privacy_amplification(self):
         while len(self.indices)>=2:
@@ -522,13 +491,24 @@ class System:
             print(item)
             for label in self.PList[item]:
                 label['background']='yellow'
+        self.finish_routine()
 
     def finish_routine(self):
-        pass
+        self.btn_3['text'] = 'Restart'
+        self.btn_3['command'] = self.restart
+        self.empty_space.grid_forget()
+        self.btn_3.grid(row=4, column=0)
+        frame = tk.Frame(master = self.process_frame)
+        frame.grid(row=6, column=0)
+        label = tk.Label(master=frame, text='Congratulations. You have obtained a shared private key. You can try again or exit.')
+        label.grid(row=0, column=0)
     def restart(self):
-        pass
+        self.process_frame.grid_remove()
+        self.start()
     def abort(self):
+        self.restart()
+    def start(self):
         pass
     
 
-test_system = System(eavesdropper=True)
+test_system = Channel()
