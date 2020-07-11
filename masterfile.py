@@ -60,8 +60,8 @@ class Channel:
         else:
             return [Alist, Blist]
         
-    def getSubset(self, number):
-        return self.a.getNewSubset(number)
+    def getSubset(self, number, keepTrack=False):
+        return self.a.getNewSubset(number, keepTrack)
     def forgetIndices(self):
         print(self.a.bit_array)
         print(self.a.newBitArray)
@@ -74,6 +74,21 @@ class Channel:
                     person.keepBit(i)
         for person in self.peopleList:
             person.replaceKey()
+        self.a.indices = list(range(len(self.a.bit_array)))
+    def errorCorrectionOneStep(self):
+        twoValues = self.getSubset(2, keepTrack=True)
+        if twoValues !=None:
+            value_alice = self.a.XOR(twoValues[0],twoValues[1])
+            value_bob = self.b.XOR(twoValues[0],twoValues[1])
+            if value_alice==value_bob:
+                self.a.keepBit(twoValues[0])
+                self.b.keepBit(twoValues[0])
+                return [twoValues, True, self.a.bit_array[twoValues[0]], self.b.bit_array[twoValues[0]]]
+        
+        return [twoValues, False, -1, -1]
+        
+        
+        
         
         
         
@@ -95,6 +110,7 @@ class System:
         self.phase1Objects = []
         self.phase2Objects = []
         self.phase3Objects = []
+        self.phase4Objects = []
         self.EList = []
         self.IList = []
         self.PList = []
@@ -429,50 +445,26 @@ class System:
         self.go_to_next_phase()
     
     def error_correction_one_step(self):
-        
-        
         for item in self.two_values:
-            #print('entered')
-            print(item)
-            for label in self.IList[item]:
-                label['background']='yellow'
-        print(self.indices)
-        if len(self.indices)>=2:            
-            self.two_values = random.sample(self.indices, 2)
-            print(self.two_values)
-            print(self.two_values)
+            for label in self.phase3Objects[item]:
+                label['background']='yellow'           
+        self.two_values, keep, valice, vbob  = self.channel.errorCorrectionOneStep()
+        print(self.two_values)
+        if self.two_values!=None:
             for i in self.two_values:
-                for label in self.IList[i]:#self.indices.index(i)]:
+                for label in self.phase3Objects[i]:#self.indices.index(i)]:
                     label['background']='orange'
-            value_alice = self.a.bit_array[self.two_values[0]]^self.a.bit_array[self.two_values[1]]
-            value_bob = self.b.bit_array[self.two_values[0]]^self.b.bit_array[self.two_values[1]]
-            print("alice", value_alice)
-            print("bob", value_bob)
-            if value_alice==value_bob:
-                tmp = []
-                v_alice = self.a.bit_array[self.two_values[0]]
-            for person in self.peopleList:
-                person.replaceKey()
-                v_bob = self.b.bit_array[self.two_values[0]]
-                self.final_key_alice.append(self.a.bit_array[self.two_values[0]])
-                self.final_key_bob.append(self.b.bit_array[self.two_values[0]])
-                label_a = tk.Label(master = self.phase4_frame, text = str(v_alice))
+            if keep:
+                tmp = []                
+                label_a = tk.Label(master = self.phase4_frame, text = str(valice))
                 label_a.grid(row=1, column=1+self.number_of_error_steps)
-                label_b = tk.Label(master = self.phase4_frame, text = str(v_bob))
+                label_b = tk.Label(master = self.phase4_frame, text = str(vbob))
                 label_b.grid(row=2, column=1+self.number_of_error_steps)
                 tmp.append(label_a)
                 tmp.append(label_b)
-                self.PList.append(tmp)
+                self.phase4Objects.append(tmp)
                 self.number_of_error_steps +=1
-            else:
-                pass
-            tmp1 = self.two_values[0]
-            tmp2 = self.two_values[1]
-            self.indices.remove(self.two_values[0])
-            self.indices.remove(self.two_values[1])
-            self.two_values[0] = tmp1
-            self.two_values[1] = tmp2
-            print(self.indices)
+
         else:
             print("not enough values")
             self.empty_space.grid_forget()
@@ -488,7 +480,7 @@ class System:
         for item in self.two_values:
             #print('entered')
             print(item)
-            for label in self.IList[item]:
+            for label in self.phase3Objects[item]:
                 label['background']='yellow'
         self.empty_space.grid_forget()
         self.btn_3.grid(row=4, column=0)

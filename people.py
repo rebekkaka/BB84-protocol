@@ -77,6 +77,8 @@ class Person:
     def replaceKey(self):
         self.bit_array = self.newBitArray
         self.newBitArray = []
+    def XOR(self, i1, i2):
+        return (self.bit_array[i1]+self.bit_array[i2])%2
 
     
 class Bob(Person):
@@ -88,12 +90,30 @@ class Bob(Person):
 class Alice(Person):
     def __init__(self):
         self.subset = []
+        self.indices = []
         super().__init__("Alice")
     def one_step(self):
         return super().create_qubit()
-    def getNewSubset(self, number):
-        self.subset = random.sample(list(range(len(self.bit_array))), number)
-        return self.subset
+    def getNewSubset(self, number, keepTrack=False): 
+        if keepTrack ==False:
+            if number <= len(self.bit_array):
+                self.subset = random.sample(list(range(len(self.bit_array))), number)
+                return self.subset
+        else:
+            print("entered")
+            if number <= len(self.indices):
+                print(self.indices)
+                self.subset = random.sample(self.indices, number)
+                tmp = []
+                for i in self.indices:
+                    if i in self.subset:
+                        pass
+                    else:
+                        tmp.append(i)
+                self.indices = tmp
+                print(self.indices)
+                return self.subset
+        return None
 
 class Eve(Person):
     def __init__(self, percentage):
