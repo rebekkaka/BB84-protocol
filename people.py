@@ -87,11 +87,13 @@ class Bob(Person):
 
 class Alice(Person):
     def __init__(self):
+        self.subset = []
         super().__init__("Alice")
     def one_step(self):
         return super().create_qubit()
-    def getSubset(self, number):
-        return random.sample(list(range(len(self.bit_array))), number)
+    def getNewSubset(self, number):
+        self.subset = random.sample(list(range(len(self.bit_array))), number)
+        return self.subset
 
 class Eve(Person):
     def __init__(self, percentage):

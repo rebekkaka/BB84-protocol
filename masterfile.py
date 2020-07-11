@@ -31,19 +31,20 @@ class Channel:
     def compareBasis(self, number):            
         if self.a.basis_array[number]==self.b.basis_array[number]:
             for person in self.peopleList:
-                person.keepBit(number)
+                person.keepBit(number)            
             return True
         else:
             return False
-        if number == a.getLength()-1:
-            for person in self.peopleList:
-                person.replaceKey()
+
     def compareBasisE(self, number):
         if self.e !=None:
             if self.a.basis_array[number]==self.e.basis_array[number] and self.e.bit_array[number]!=-1:
                 return True
             else:
                 return False
+    def replaceKey(self):
+        for person in self.peopleList:
+            person.replaceKey()
     def compareBit(self, number):            
         if self.a.bit_array[number]==self.b.bit_array[number]:
             return True
@@ -60,8 +61,19 @@ class Channel:
             return [Alist, Blist]
         
     def getSubset(self, number):
-        return self.a.getSubset(number)
-        
+        return self.a.getNewSubset(number)
+    def forgetIndices(self):
+        print(self.a.bit_array)
+        print(self.a.newBitArray)
+        subset = self.a.subset
+        for i in range(len(self.a.bit_array)):
+            if i in subset:
+                pass
+            else:
+                for person in self.peopleList:
+                    person.keepBit(i)
+        for person in self.peopleList:
+            person.replaceKey()
         
         
         
@@ -82,6 +94,7 @@ class System:
         self.frameList = []
         self.phase1Objects = []
         self.phase2Objects = []
+        self.phase3Objects = []
         self.EList = []
         self.IList = []
         self.PList = []
@@ -256,7 +269,7 @@ class System:
             self.btn_2['text'] = 'All error correction at once'
             self.btn_2.grid(row=2,column=0)
             self.btn_1['command'] = self.error_correction_one_step
-            self.btn_2['commself.subset = random.sample(self.indices, number)and'] = self.error_correction
+            self.btn_2['command'] = self.error_correction
             self.phase4_frame = tk.Frame(master=self.process_frame)
             self.phase4_frame.grid(row=4,column=0)
             label = tk.Label(master=self.phase4_frame, text="Shared Key")
@@ -333,7 +346,7 @@ class System:
                     if self.channel.compareBasisE(i):
                         for n in self.eList:
                             self.phase1Objects[i][n]['background']='pale green'
-                    
+        self.channel.replaceKey()            
         self.phase2_frame = tk.Frame(master=self.process_frame)
         self.phase2_frame.grid(row=1,column=0)
         label = tk.Label(master=self.phase2_frame, text="Shared Key")
@@ -369,7 +382,7 @@ class System:
         for i in subset:
             for label in self.phase2Objects[i]:
                 label['background'] = 'orange'
-            if self.channel.compareBit(i):
+            if self.channel.compareBit(i)==False:
                 counter+=1
         error=float(counter)/float(len(subset))
         self.phase3_frame = tk.Frame(master=self.process_frame)
@@ -382,10 +395,10 @@ class System:
         button_abort.grid(row=0, column=0)
         button_continue = tk.Button(master=self.button_frame, text = 'Continue with postprocessing', command = self.continue_postprocessing)
         button_continue.grid(row=0,column=1)
-        #self.empty_space.grid_forget()
-        #self.btn_3.grid(row=5, column=0)
+
         
     def continue_postprocessing(self):
+        self.channel.forgetIndices()
         self.button_frame.grid_forget()
         self.button_frame.destroy()
         frame = tk.Frame(master=self.process_frame)
@@ -402,32 +415,17 @@ class System:
             row_b=2
         label_b = tk.Label(master=frame, text='Bob')
         label_b.grid(row=row_b, column=1)
-        c =5
-        self.IList.clear()
+        offset = 2
         tmp = []
-        newlist = []
-        for i in self.indices:
-            if i in self.subset:
-                pass
-            else:
-                newlist.append(i)
-                #frame = tk.Frame(master=self.process_frame)
-                #frame.grid(row=4,column=c+2)
-                label = tk.Label(master=frame, text=str(self.a.bit_array[i]))
-                tmp.append(label)
-                label.grid(row=1, column=c)
-                if self.eavesdropper and self.e.bit_array[i]!=-1:
-                    label = tk.Label(master=frame, text=str(self.e.bit_array[i]))
-                    #tmp.append(label)
-                    label.grid(row=2, column=c)
-                label = tk.Label(master=frame, text=str(self.b.bit_array[i]))
-                tmp.append(label)
-                label.grid(row=row_b, column=c)
-                c+=1
-                self.IList.append(tmp)
-                tmp = []
-        self.indices = newlist
-        self.indices = list(range(len(self.indices)))
+        bitArray = self.channel.getBits()
+        for n in range(len(bitArray[0])):
+            for i in range(len(bitArray)):
+                if bitArray[i][n] !=-1:
+                    label = tk.Label(master=frame, text=str(bitArray[i][n]))              
+                    label.grid(row=1+i, column=offset+n)
+                    tmp.append(label)
+            self.phase3Objects.append(tmp)
+            tmp = []
         self.go_to_next_phase()
     
     def error_correction_one_step(self):
