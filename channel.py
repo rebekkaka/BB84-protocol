@@ -32,11 +32,17 @@ class Channel:
             tmp2, tmp3 = self.e.getInfo(i)
         result = self.b.one_step(self.qubit)
         tmp4, tmp5 = self.b.getInfo(i)
-        return [[tmp, tmp1], [tmp2, tmp3], [tmp4, tmp5]]
-    def compareBasis(self, number):            
+        if self.e!=None:
+            return [[tmp, tmp1], [tmp2, tmp3], [tmp4, tmp5]]
+        else:
+            return [[tmp, tmp1], [tmp4, tmp5]]
+    def compareBasis(self, number):         
         if self.a.basis_array[number]==self.b.basis_array[number]:
             for person in self.peopleList:
-                person.keepBit(number)            
+                if person.name!="Eve" or self.compareBasisE(number):
+                    person.keepBit(number)
+                else:
+                    person.keepBit(-1)
             return True
         else:
             return False
@@ -59,7 +65,7 @@ class Channel:
     def getBits(self):
         Alist = self.a.getBits()
         Blist = self.b.getBits()
-        if self.e !=0:
+        if self.e !=None:
             Elist = self.e.getBits()
             return [Alist, Elist, Blist]
         else:
@@ -91,15 +97,35 @@ class Channel:
             if value_alice==value_bob:
                 self.a.keepBit(twoValues[0])
                 self.b.keepBit(twoValues[0])
-                return [twoValues, True, self.a.bit_array[twoValues[0]], self.b.bit_array[twoValues[0]]]
+                if self.e!=None:
+                    if self.e.bit_array[twoValues[0]]!=-1:
+                        ve = self.e.bit_array[twoValues[0]]
+                        self.e.keepBit(twoValues[0])
+                    elif self.e.bit_array[twoValues[1]]!=-1:
+                        ve = self.e.XOR(twoValues[1], value_alice, True)
+                        self.e.keepBit(ve, value=True)
+                    else:
+                        ve=-1
+                        self.e.keepBit(-1)
+                else:
+                    ve = -1
+                
+                return [twoValues, True, self.a.bit_array[twoValues[0]], self.b.bit_array[twoValues[0]],ve]
         
-        return [twoValues, False, -1, -1]
+        return [twoValues, False, -1, -1,-1]
     def privacyAmplificationOneStep(self):
         twoValues = self.getSubset(2, keepTrack=True)
         if twoValues !=None:
             value_alice = self.a.XOR(twoValues[0],twoValues[1])
             value_bob = self.b.XOR(twoValues[0],twoValues[1])
-            self.a.keepBit(value_alice)
-            self.b.keepBit(value_bob)
-            return [twoValues, value_alice, value_bob]
-        return [twoValues, -1, -1]
+            self.a.keepBit(value_alice, value=True)
+            self.b.keepBit(value_bob, value=True)
+            value_eve = -1
+            if self.e !=None:
+                if self.e.bit_array[twoValues[0]]!=-1 and self.e.bit_array[twoValues[1]]!=-1:
+                    value_eve =  self.e.XOR(twoValues[0],twoValues[1], False)
+                    self.e.keepBit(value_eve, value=True)
+                else:
+                    self.e.keepBit(-1)
+            return [twoValues, value_alice, value_bob, value_eve]
+        return [twoValues, -1, -1, -1]

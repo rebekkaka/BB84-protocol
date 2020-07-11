@@ -66,8 +66,14 @@ class Person:
         return self.get_density_matrix(bit, basis)
     def getInfo(self, number):
         return self.bit_array[number], self.basis_array[number]
-    def keepBit(self, index):
-        self.newBitArray.append(self.bit_array[index])
+    def keepBit(self, index, value=False):
+        if index!=-1:
+            if value==False:
+                self.newBitArray.append(self.bit_array[index])
+            else:
+                self.newBitArray.append(index)
+        else:
+            self.newBitArray.append(-1)
     def discardBit(self, index):
         self.newBitArray.pop(index)
     def getBits(self):
@@ -131,3 +137,8 @@ class Eve(Person):
             self.bit_array.append(-1)
             self.basis_array.append(-1)
             return rho
+    def XOR(self, i1, i2,value):
+        if value ==True:
+            return (self.bit_array[i1]+i2)%2
+        else:
+            return (self.bit_array[i1]+self.bit_array[i2])%2

@@ -1,12 +1,7 @@
 
 import tkinter as tk
 from PIL import Image, ImageTk 
-
-        
-        
-    
-        
-        
+from channel import *
 
 class System:
     def __init__(self):#, intelligence):#, percentageOfEavesdropping=1):
@@ -61,7 +56,7 @@ class System:
         self.phase_label.grid(row=0, column = 0)
         self.entry_frame = tk.Frame(master=self.menu_frame, width=25, height=3)
         self.entry_frame.grid(row=3, column=0)
-        self.main_label = tk.Label(master= self.entry_frame, text="Enter eavesdropping rate")
+        self.main_label = tk.Text(master= self.entry_frame, text="Enter eavesdropping rate")
         self.main_label.grid(row=0,column=0)
         self.entry = tk.Entry(master=self.entry_frame)
         self.entry.grid(row=1,column=0)
@@ -127,7 +122,7 @@ class System:
                 label_b.grid(row=6,column=0)
                 labels = text * 2
             else:
-                label_b(row=3,column =0)
+                label_b.grid(row=3,column =0)
                 labels = text
             labels = labels + text[:2]
             for i in range(len(labels)):
@@ -171,7 +166,7 @@ class System:
         self.btn_2.grid_remove()
         self.btn_3.grid_forget()
         self.empty_space2.grid(row=2, column=0)
-        self.empty_space.grid(row=5, column =0)
+        self.empty_space.grid(row=4, column =0)
         self.btn_1['command'] = self.compare_bases
         self.main_label.grid_forget()
         self.entry.grid_forget()
@@ -200,12 +195,7 @@ class System:
         self.btn_2['command'] = self.error_correction
         self.phase4_frame = tk.Frame(master=self.process_frame)
         self.phase4_frame.grid(row=4,column=0)
-        label = tk.Label(master=self.phase4_frame, text="Shared Key")
-        label.grid(row=0,column=0)
-        label_a = tk.Label(master=self.phase4_frame, text='Alice')
-        label_a.grid(row=1,column=0)
-        label_a = tk.Label(master=self.phase4_frame, text='Bob')
-        label_a.grid(row=2,column=0)
+        row_b = self.setUpNames(self.phase4_frame)
     def go_to_phase5(self):
         self.phase_label['text'] = 'Phase 5: Privacy amplification'
         self.btn_1['text'] = 'One privacy amplification step'
@@ -213,16 +203,11 @@ class System:
         self.btn_1['command'] = self.privacy_amplification_one_step
         self.btn_2['command'] = self.privacy_amplification
         self.btn_3.grid_forget()
-        self.empty_space.grid(row=5, column=0)
+        self.empty_space.grid(row=4, column=0)
             
         self.phase5_frame = tk.Frame(master=self.process_frame)
         self.phase5_frame.grid(row=5,column=0)
-        label = tk.Label(master=self.phase5_frame, text="Shared Key")
-        label.grid(row=0,column=0)
-        label_a = tk.Label(master=self.phase5_frame, text='Alice')
-        label_a.grid(row=1,column=0)
-        label_a = tk.Label(master=self.phase5_frame, text='Bob')
-        label_a.grid(row=2,column=0)
+        row_b = self.setUpNames(self.phase5_frame)
             
 
 
@@ -264,7 +249,8 @@ class System:
 
     def compare_bases(self):
         for i in range(self.currentStep):
-            if self.channel.compareBasis(i):
+            value = self.channel.compareBasis(i)
+            if value:
                 for n in self.indexList:
                     self.phase1Objects[i][n]['background']='green2'
                 if self.eavesdropper:
@@ -274,31 +260,35 @@ class System:
         self.channel.replaceKey()            
         self.phase2_frame = tk.Frame(master=self.process_frame)
         self.phase2_frame.grid(row=1,column=0)
-        label = tk.Label(master=self.phase2_frame, text="Shared Key")
-        label.grid(row=0,column=0)
-        label_a = tk.Label(master=self.phase2_frame, text='Alice')
-        label_a.grid(row=1,column=0)
-        if self.eavesdropper:
-            label_e = tk.Label(master=self.phase2_frame, text='Eve')
-            label_e.grid(row=2, column=0)
-            row_b=3
-        else:
-            row_b=2
-        label_b = tk.Label(master=self.phase2_frame, text='Bob')
-        label_b.grid(row=row_b, column=0)
+        row_b = self.setUpNames(self.phase2_frame)
         offset =1
         tmp = []
         bitArray = self.channel.getBits()
         for n in range(len(bitArray[0])):
             for i in range(len(bitArray)):
                 if bitArray[i][n] !=-1:
-                    label = tk.Label(master=self.phase2_frame, text=str(bitArray[i][n]))              
+                    label = tk.Label(master=self.phase2_frame, text=str(bitArray[i][n]), width=2, height=2)              
                     label.grid(row=1+i, column=offset+n)
+                if len(bitArray)==2 or i!=1:
                     tmp.append(label)
             self.phase2Objects.append(tmp)
             tmp = []
         self.empty_space.grid_forget()
         self.btn_3.grid(row=4, column=0)
+    def setUpNames(self, frame):
+        label = tk.Label(master=frame, text="Shared Key",width = 10, height = 2)
+        label.grid(row=0,column=0)
+        label_a = tk.Label(master=frame, text='Alice',width = 10, height = 2)
+        label_a.grid(row=1,column=0)
+        if self.eavesdropper:
+            label_e = tk.Label(master=frame, text='Eve',width = 10, height = 2)
+            label_e.grid(row=2, column=0)
+            row_b=3
+        else:
+            row_b=2
+        label_b = tk.Label(master=frame, text='Bob',width = 10, height = 2)
+        label_b.grid(row=row_b, column=0)
+        return row_b
                
     def error_rate(self):
         number = int(self.entry.get())
@@ -328,27 +318,17 @@ class System:
         self.button_frame.destroy()
         frame = tk.Frame(master=self.process_frame)
         frame.grid(row=3,column=0)
-        label = tk.Label(master=frame, text="Shared Key")
-        label.grid(row=0,column=1)
-        label_a = tk.Label(master=frame, text='Alice')
-        label_a.grid(row=1,column=1)
-        if self.eavesdropper:
-            label_e = tk.Label(master=frame, text='Eve')
-            label_e.grid(row=2, column=1)
-            row_b=3
-        else:
-            row_b=2
-        label_b = tk.Label(master=frame, text='Bob')
-        label_b.grid(row=row_b, column=1)
+        row_b = self.setUpNames(frame)
         offset = 2
         tmp = []
         bitArray = self.channel.getBits()
         for n in range(len(bitArray[0])):
             for i in range(len(bitArray)):
                 if bitArray[i][n] !=-1:
-                    label = tk.Label(master=frame, text=str(bitArray[i][n]))              
+                    label = tk.Label(master=frame, text=str(bitArray[i][n]), width=2, height=2)              
                     label.grid(row=1+i, column=offset+n)
-                    tmp.append(label)
+                    if len(bitArray)==2 or i!=1:
+                        tmp.append(label)
             self.phase3Objects.append(tmp)
             tmp = []
         self.go_to_next_phase()
@@ -357,7 +337,7 @@ class System:
         for item in self.two_values:
             for label in self.phase3Objects[item]:
                 label['background']='yellow'           
-        self.two_values, keep, valice, vbob  = self.channel.errorCorrectionOneStep()
+        self.two_values, keep, valice, vbob, ve  = self.channel.errorCorrectionOneStep()
         print(self.two_values)
         if self.two_values!=None:
             for i in self.two_values:
@@ -365,10 +345,15 @@ class System:
                     label['background']='orange'
             if keep:
                 tmp = []                
-                label_a = tk.Label(master = self.phase4_frame, text = str(valice))
+                label_a = tk.Label(master = self.phase4_frame, text = str(valice), width=2, height=2)
                 label_a.grid(row=1, column=1+self.number_of_error_steps)
-                label_b = tk.Label(master = self.phase4_frame, text = str(vbob))
-                label_b.grid(row=2, column=1+self.number_of_error_steps)
+                if ve!=-1:
+                    label_e = tk.Label(master = self.phase4_frame, text = str(ve), width=2, height=2)
+                    label_e.grid(row=2, column=1+self.number_of_error_steps)
+                label_b = tk.Label(master = self.phase4_frame, text = str(vbob), width=2, height=2)
+                if self.eavesdropper: row_b =3 
+                else: row_b=2
+                label_b.grid(row=row_b, column=1+self.number_of_error_steps)
                 tmp.append(label_a)
                 tmp.append(label_b)
                 self.phase4Objects.append(tmp)
@@ -394,15 +379,20 @@ class System:
         for item in self.two_values:
             for label in self.phase4Objects[item]:
                 label['background']='yellow'           
-        self.two_values, valice, vbob  = self.channel.privacyAmplificationOneStep()
+        self.two_values, valice, vbob, veve  = self.channel.privacyAmplificationOneStep()
         if self.two_values!=None:
             for i in self.two_values:
                 for label in self.phase4Objects[i]:#self.indices.index(i)]:
                     label['background']='orange'               
-            label_a = tk.Label(master = self.phase5_frame, text = str(valice))
+            label_a = tk.Label(master = self.phase5_frame, text = str(valice), width=2, height=2)
             label_a.grid(row=1, column=1+self.number_of_error_steps)
-            label_b = tk.Label(master = self.phase5_frame, text = str(vbob))
-            label_b.grid(row=2, column=1+self.number_of_error_steps)
+            if veve !=-1:
+                label_e = tk.Label(master = self.phase5_frame, text = str(veve), width=2, height=2)
+                label_e.grid(row=2, column=1+self.number_of_error_steps)
+            if self.eavesdropper: row_b =3 
+            else: row_b=2
+            label_b = tk.Label(master = self.phase5_frame, text = str(vbob), width=2, height=2)
+            label_b.grid(row=row_b, column=1+self.number_of_error_steps)
             self.number_of_error_steps +=1
 
         else:
