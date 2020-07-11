@@ -12,6 +12,7 @@ import numpy as np
 class Person:
     def __init__(self, name):
         self.bit_array = []
+        self.newBitArray = []
         self.basis_array = []
         self.name = name
 
@@ -66,9 +67,16 @@ class Person:
     def getInfo(self, number):
         return self.bit_array[number], self.basis_array[number]
     def keepBit(self, index):
-        pass
-    def deleteBit(self, index):
-        self.bit_array.pop(index)
+        self.newBitArray.append(self.bit_array[index])
+    def discardBit(self, index):
+        self.newBitArray.pop(index)
+    def getBits(self):
+        return self.bit_array
+    def getArrayLength(self):
+        return len(self.bit_array)
+    def replaceKey(self):
+        self.bit_array = self.newBitArray
+        self.newBitArray = []
 
     
 class Bob(Person):

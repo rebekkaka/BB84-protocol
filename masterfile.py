@@ -8,12 +8,15 @@ from people import *
 class Channel:
     def __init__(self, eavesdroppingRate):
         self.eavesdroppingRate = eavesdroppingRate
+        
         self.b = Bob()
         self.a = Alice()
         if self.eavesdroppingRate > 0:
             self.e = Eve(eavesdroppingRate)
+            self.peopleList = [self.a, self.e, self.b]
         else:
             self.e = None
+            self.peopleList = [self.a, self.b]
     
     
     def simulate_one_cycle(self, i):
@@ -25,20 +28,31 @@ class Channel:
         result = self.b.one_step(self.qubit)
         tmp4, tmp5 = self.b.getInfo(i)
         return [[tmp, tmp1], [tmp2, tmp3], [tmp4, tmp5]]
-    def compareBasis(self, number):
+    def compareBasis(self, number):            
         if self.a.basis_array[number]==self.b.basis_array[number]:
+            for person in self.peopleList:
+                person.keepBit(number)
             return True
         else:
-            self.a.discardBit(number)
-            self.b.discardBit(number)
-            self.e.discardBit(number)
             return False
+        if number == a.getLength()-1:
+            for person in self.peopleList:
+                person.replaceKey()
     def compareBasisE(self, number):
         if self.e !=None:
             if self.a.basis_array[number]==self.e.basis_array[number] and self.e.bit_array[number]!=-1:
                 return True
             else:
                 return False
+    
+    def getBits(self):
+        Alist = self.a.getBits()
+        Blist = self.b.getBits()
+        if self.e !=0:
+            Elist = self.e.getBits()
+            return [Alist, Elist, Blist]
+        else:
+            return [Alist, Blist]
         
         
         
@@ -58,7 +72,7 @@ class System:
         self.indices = []
         self.frameList = []
         self.phase1Objects = []
-        self.ABList = []
+        self.phase2Objects = []
         self.EList = []
         self.IList = []
         self.PList = []
@@ -269,7 +283,6 @@ class System:
 
     def displaying(self, number, plottingList):
         objects = []
-        eobjects = []
         rn=0
         for i in plottingList:
             if i[0]!=-1:
@@ -327,25 +340,15 @@ class System:
             row_b=2
         label_b = tk.Label(master=self.phase2_frame, text='Bob')
         label_b.grid(row=row_b, column=0)
-        c =5
+        offset =1
         tmp = []
-        
-        for i in range(len(self.a.basis_array)):
-            if self.a.basis_array[i]==self.b.basis_array[i]:
-                #frame = tk.Frame(master=self.process_frame)
-                #frame.grid(row=4,column=c+2)
-                label = tk.Label(master=self.phase2_frame, text=str(self.a.bit_array[i]))
+        bitArray = self.channel.getBits()
+        for n in range(len(bitArray[0])):
+            for i in range(len(bitArray)):
+                label = tk.Label(master=self.phase2_frame, text=str(bitArray[i][n]))
                 tmp.append(label)
-                label.grid(row=1, column=c)
-                if self.eavesdropper and self.e.bit_array[i]!=-1:
-                    label = tk.Label(master=self.phase2_frame, text=str(self.e.bit_array[i]))
-                    tmp.append(label)
-                    label.grid(row=2, column=c)
-                label = tk.Label(master=self.phase2_frame, text=str(self.b.bit_array[i]))
-                tmp.append(label)
-                label.grid(row=row_b, column=c)
-                c+=1 
-            self.IList.append(tmp)
+                label.grid(row=1+i, column=offset+n)
+            self.phase2Objects.append(tmp)
             tmp = []
         self.empty_space.grid_forget()
         self.btn_3.grid(row=4, column=0)
