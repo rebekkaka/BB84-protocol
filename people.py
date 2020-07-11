@@ -90,6 +90,8 @@ class Alice(Person):
         super().__init__("Alice")
     def one_step(self):
         return super().create_qubit()
+    def getSubset(self, number):
+        return random.sample(list(range(len(self.bit_array))), number)
 
 class Eve(Person):
     def __init__(self, percentage):

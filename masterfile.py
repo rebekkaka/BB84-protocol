@@ -44,6 +44,11 @@ class Channel:
                 return True
             else:
                 return False
+    def compareBit(self, number):            
+        if self.a.bit_array[number]==self.b.bit_array[number]:
+            return True
+        else:
+            return False
     
     def getBits(self):
         Alist = self.a.getBits()
@@ -53,6 +58,10 @@ class Channel:
             return [Alist, Elist, Blist]
         else:
             return [Alist, Blist]
+        
+    def getSubset(self, number):
+        return self.a.getSubset(number)
+        
         
         
         
@@ -226,16 +235,15 @@ class System:
             self.main_label.grid_forget()
             self.entry.grid_forget()
             self.empty_space3.grid(row=0, column=0)
-            self.empty_space3.grid(row=0, column=0)
         
         elif self.phase ==2:
+            self.empty_space3.grid_forget()
             self.phase_label['text'] = 'Phase 3: Error rate'
             self.btn_1['text'] = 'Compute error rate'
             self.main_label['text'] = 'Choose number of samples'
             self.btn_1['command'] = self.error_rate
             self.entry.grid(row=1,column=0)
             self.main_label.grid(row=0, column=0)
-            self.empty_space3.grid_forget()
             self.btn_3.grid_forget()
             self.empty_space.grid(row=4, column =0)
         elif self.phase ==3:
@@ -248,7 +256,7 @@ class System:
             self.btn_2['text'] = 'All error correction at once'
             self.btn_2.grid(row=2,column=0)
             self.btn_1['command'] = self.error_correction_one_step
-            self.btn_2['command'] = self.error_correction
+            self.btn_2['commself.subset = random.sample(self.indices, number)and'] = self.error_correction
             self.phase4_frame = tk.Frame(master=self.process_frame)
             self.phase4_frame.grid(row=4,column=0)
             label = tk.Label(master=self.phase4_frame, text="Shared Key")
@@ -345,9 +353,10 @@ class System:
         bitArray = self.channel.getBits()
         for n in range(len(bitArray[0])):
             for i in range(len(bitArray)):
-                label = tk.Label(master=self.phase2_frame, text=str(bitArray[i][n]))
-                tmp.append(label)
-                label.grid(row=1+i, column=offset+n)
+                if bitArray[i][n] !=-1:
+                    label = tk.Label(master=self.phase2_frame, text=str(bitArray[i][n]))              
+                    label.grid(row=1+i, column=offset+n)
+                    tmp.append(label)
             self.phase2Objects.append(tmp)
             tmp = []
         self.empty_space.grid_forget()
@@ -355,15 +364,14 @@ class System:
                
     def error_rate(self):
         number = int(self.entry.get())
-        print(number)
-        self.subset = random.sample(self.indices, number)
+        subset = self.channel.getSubset(number)
         counter = 0
-        for i in self.subset:
-            for label in self.IList[i]:
+        for i in subset:
+            for label in self.phase2Objects[i]:
                 label['background'] = 'orange'
-            if self.a.bit_array[i]!=self.b.bit_array[i]:
+            if self.channel.compareBit(i):
                 counter+=1
-        error=float(counter)/float(len(self.subset))
+        error=float(counter)/float(len(subset))
         self.phase3_frame = tk.Frame(master=self.process_frame)
         self.phase3_frame.grid(row=2, column=0)
         error_label = tk.Label(master=self.phase3_frame, text = 'The error rate is ' + str(error) + '. Do you want to abort or continue with postprocessing?' )
@@ -445,6 +453,8 @@ class System:
             if value_alice==value_bob:
                 tmp = []
                 v_alice = self.a.bit_array[self.two_values[0]]
+            for person in self.peopleList:
+                person.replaceKey()
                 v_bob = self.b.bit_array[self.two_values[0]]
                 self.final_key_alice.append(self.a.bit_array[self.two_values[0]])
                 self.final_key_bob.append(self.b.bit_array[self.two_values[0]])
