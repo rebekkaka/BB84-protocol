@@ -1,124 +1,53 @@
-import random
-import numpy as np
+
 import tkinter as tk
 from PIL import Image, ImageTk 
-from people import *
 
-
-class Channel:
-    def __init__(self, eavesdroppingRate):
-        self.eavesdroppingRate = eavesdroppingRate
         
-        self.b = Bob()
-        self.a = Alice()
-        if self.eavesdroppingRate > 0:
-            self.e = Eve(eavesdroppingRate)
-            self.peopleList = [self.a, self.e, self.b]
-        else:
-            self.e = None
-            self.peopleList = [self.a, self.b]
+        
     
-    
-    def simulate_one_cycle(self, i):
-        self.qubit = self.a.one_step()
-        tmp, tmp1 = self.a.getInfo(i)
-        if self.e!=None:
-            self.qubit = self.e.one_step(self.qubit)
-            tmp2, tmp3 = self.e.getInfo(i)
-        result = self.b.one_step(self.qubit)
-        tmp4, tmp5 = self.b.getInfo(i)
-        return [[tmp, tmp1], [tmp2, tmp3], [tmp4, tmp5]]
-    def compareBasis(self, number):            
-        if self.a.basis_array[number]==self.b.basis_array[number]:
-            for person in self.peopleList:
-                person.keepBit(number)            
-            return True
-        else:
-            return False
-
-    def compareBasisE(self, number):
-        if self.e !=None:
-            if self.a.basis_array[number]==self.e.basis_array[number] and self.e.bit_array[number]!=-1:
-                return True
-            else:
-                return False
-    def replaceKey(self):
-        for person in self.peopleList:
-            person.replaceKey()
-    def compareBit(self, number):            
-        if self.a.bit_array[number]==self.b.bit_array[number]:
-            return True
-        else:
-            return False
-    
-    def getBits(self):
-        Alist = self.a.getBits()
-        Blist = self.b.getBits()
-        if self.e !=0:
-            Elist = self.e.getBits()
-            return [Alist, Elist, Blist]
-        else:
-            return [Alist, Blist]
-        
-    def getSubset(self, number, keepTrack=False):
-        return self.a.getNewSubset(number, keepTrack)
-    def forgetIndices(self):
-        print(self.a.bit_array)
-        print(self.a.newBitArray)
-        subset = self.a.subset
-        for i in range(len(self.a.bit_array)):
-            if i in subset:
-                pass
-            else:
-                for person in self.peopleList:
-                    person.keepBit(i)
-        for person in self.peopleList:
-            person.replaceKey()
-        self.a.indices = list(range(len(self.a.bit_array)))
-    def errorCorrectionOneStep(self):
-        twoValues = self.getSubset(2, keepTrack=True)
-        if twoValues !=None:
-            value_alice = self.a.XOR(twoValues[0],twoValues[1])
-            value_bob = self.b.XOR(twoValues[0],twoValues[1])
-            if value_alice==value_bob:
-                self.a.keepBit(twoValues[0])
-                self.b.keepBit(twoValues[0])
-                return [twoValues, True, self.a.bit_array[twoValues[0]], self.b.bit_array[twoValues[0]]]
-        
-        return [twoValues, False, -1, -1]
-        
-        
-        
-        
-        
-        
-
-        
-        
-
         
         
 
 class System:
-    def __init__(self):#, percentageOfEavesdropping=1):
-        
-        self.currentStep = 0
+    def __init__(self):#, intelligence):#, percentageOfEavesdropping=1):
+        #self.system = intelligence
         self.channel = None
+        self.currentStep = 0
+        self.number_of_error_steps = 0
         self.phase = 0
-        self.indices = []
-        self.frameList = []
         self.phase1Objects = []
         self.phase2Objects = []
         self.phase3Objects = []
         self.phase4Objects = []
-        self.EList = []
-        self.IList = []
-        self.PList = []
         self.two_values = []
-        self.final_key_alice = []
-        self.final_key_bob = []
-        self.number_of_error_steps = 0
+
         self.initializeTkinter()
+        
+    def go_to_next_phase(self):
+        if self.phase ==0:
+            number = self.getNumber()
+            self.channel = Channel(number)
+            self.go_to_phase1(number)
+        elif self.phase ==1:
+            self.go_to_phase2()        
+        elif self.phase ==2:
+            self.go_to_phase3()
+        elif self.phase ==3:
+            self.go_to_phase4()
+        elif self.phase ==4:
+            self.channel.preparePostprocessing()
+            self.go_to_phase5()
+            self.two_values = []
+            self.number_of_error_steps = 0
+        self.phase += 1
+    def simulate_one_cycle(self):
+        plottingList = self.channel.simulate_one_cycle(self.currentStep)
+        self.displaying(self.currentStep, plottingList)
+        self.currentStep += 1
+    def simulate_multiple_cycle(self):
+        number = int(self.getNumber())
+        for i in range(number):
+            self.simulate_one_cycle()
         
 
     def initializeTkinter(self):
@@ -166,21 +95,14 @@ class System:
 
 
 
-    def simulate_one_cycle(self):
-        plottingList = self.channel.simulate_one_cycle(self.currentStep)
-        self.displaying(self.currentStep, plottingList)
-        self.currentStep += 1
+    
 
-    def simulate_multiple_cycle(self):
-        number = int(self.entry.get())
+            
+    def getNumber(self):
+        number = float(self.entry.get())
         self.entry.delete(0,tk.END)
-        for i in range(number):
-            self.simulate_one_cycle()
-    def go_to_next_phase(self):
-        if self.phase ==0:
-            number = float(self.entry.get())
-            self.entry.delete(0,tk.END)
-            self.channel = Channel(number)
+        return number
+    def go_to_phase1(self, number):
             if number >0:
                 self.eavesdropper = True
                 self.indexList = [0,1,4,5]
@@ -189,16 +111,7 @@ class System:
                 self.indexList = [2,3]
                 self.eList = []
                 self.eavesdropper = False
-            self.b = Bob()
-            self.a = Alice()
-            self.name_list = ["Alice"]
-            self.object_list = [self.a]
-            if self.eavesdropper:
-                self.e = Eve(number)
-                self.name_list.append("Eve")
-                self.object_list.append(self.e)
-            self.name_list.append("Bob")
-            self.object_list.append(self.b)
+
             
             
             self.phase1_frame =tk.Frame(master=self.process_frame)
@@ -252,70 +165,66 @@ class System:
             self.btn_3.grid_forget()
             self.empty_space.grid(row=4,column=0)
             
-
-        elif self.phase ==1:
-            self.phase_label['text'] = 'Phase 2: Key Sifting'
-            self.btn_1['text'] = 'Compare bases'
-            self.btn_2.grid_remove()
-            self.btn_3.grid_forget()
-            self.empty_space2.grid(row=2, column=0)
-            self.empty_space.grid(row=5, column =0)
-            self.btn_1['command'] = self.compare_bases
-            self.main_label.grid_forget()
-            self.entry.grid_forget()
-            self.empty_space3.grid(row=0, column=0)
+    def go_to_phase2(self):
+        self.phase_label['text'] = 'Phase 2: Key Sifting'
+        self.btn_1['text'] = 'Compare bases'
+        self.btn_2.grid_remove()
+        self.btn_3.grid_forget()
+        self.empty_space2.grid(row=2, column=0)
+        self.empty_space.grid(row=5, column =0)
+        self.btn_1['command'] = self.compare_bases
+        self.main_label.grid_forget()
+        self.entry.grid_forget()
+        self.empty_space3.grid(row=0, column=0)
         
-        elif self.phase ==2:
-            self.empty_space3.grid_forget()
-            self.phase_label['text'] = 'Phase 3: Error rate'
-            self.btn_1['text'] = 'Compute error rate'
-            self.main_label['text'] = 'Choose number of samples'
-            self.btn_1['command'] = self.error_rate
-            self.entry.grid(row=1,column=0)
-            self.main_label.grid(row=0, column=0)
-            self.btn_3.grid_forget()
-            self.empty_space.grid(row=4, column =0)
-        elif self.phase ==3:
-            self.main_label.grid_forget()
-            self.entry.grid_forget()
-            self.empty_space3.grid(row=0, column=0)
-            self.phase_label['text'] = 'Phase 4: Error correction'
-            self.btn_1['text'] = 'One error correction step'
-            self.empty_space2.grid_remove()
-            self.btn_2['text'] = 'All error correction at once'
-            self.btn_2.grid(row=2,column=0)
-            self.btn_1['command'] = self.error_correction_one_step
-            self.btn_2['command'] = self.error_correction
-            self.phase4_frame = tk.Frame(master=self.process_frame)
-            self.phase4_frame.grid(row=4,column=0)
-            label = tk.Label(master=self.phase4_frame, text="Shared Key")
-            label.grid(row=0,column=0)
-            label_a = tk.Label(master=self.phase4_frame, text='Alice')
-            label_a.grid(row=1,column=0)
-            label_a = tk.Label(master=self.phase4_frame, text='Bob')
-            label_a.grid(row=2,column=0)
-        elif self.phase ==4:
-            self.phase_label['text'] = 'Phase 5: Privacy amplification'
-            self.btn_1['text'] = 'One privacy amplification step'
-            self.btn_2['text'] = 'All privacy amplification at once'
-            self.btn_1['command'] = self.privacy_amplification_one_step
-            self.btn_2['command'] = self.privacy_amplification
-            self.btn_3.grid_forget()
-            self.empty_space.grid(row=5, column=0)
+    def go_to_phase3(self):
+        self.empty_space3.grid_forget()
+        self.phase_label['text'] = 'Phase 3: Error rate'
+        self.btn_1['text'] = 'Compute error rate'
+        self.main_label['text'] = 'Choose number of samples'
+        self.btn_1['command'] = self.error_rate
+        self.entry.grid(row=1,column=0)
+        self.main_label.grid(row=0, column=0)
+        self.btn_3.grid_forget()
+        self.empty_space.grid(row=4, column =0)
+    def go_to_phase4(self):
+        self.main_label.grid_forget()
+        self.entry.grid_forget()
+        self.empty_space3.grid(row=0, column=0)
+        self.phase_label['text'] = 'Phase 4: Error correction'
+        self.btn_1['text'] = 'One error correction step'
+        self.empty_space2.grid_remove()
+        self.btn_2['text'] = 'All error correction at once'
+        self.btn_2.grid(row=2,column=0)
+        self.btn_1['command'] = self.error_correction_one_step
+        self.btn_2['command'] = self.error_correction
+        self.phase4_frame = tk.Frame(master=self.process_frame)
+        self.phase4_frame.grid(row=4,column=0)
+        label = tk.Label(master=self.phase4_frame, text="Shared Key")
+        label.grid(row=0,column=0)
+        label_a = tk.Label(master=self.phase4_frame, text='Alice')
+        label_a.grid(row=1,column=0)
+        label_a = tk.Label(master=self.phase4_frame, text='Bob')
+        label_a.grid(row=2,column=0)
+    def go_to_phase5(self):
+        self.phase_label['text'] = 'Phase 5: Privacy amplification'
+        self.btn_1['text'] = 'One privacy amplification step'
+        self.btn_2['text'] = 'All privacy amplification at once'
+        self.btn_1['command'] = self.privacy_amplification_one_step
+        self.btn_2['command'] = self.privacy_amplification
+        self.btn_3.grid_forget()
+        self.empty_space.grid(row=5, column=0)
             
-            self.phase5_frame = tk.Frame(master=self.process_frame)
-            self.phase5_frame.grid(row=5,column=0)
-            label = tk.Label(master=self.phase5_frame, text="Shared Key")
-            label.grid(row=0,column=0)
-            label_a = tk.Label(master=self.phase5_frame, text='Alice')
-            label_a.grid(row=1,column=0)
-            label_a = tk.Label(master=self.phase5_frame, text='Bob')
-            label_a.grid(row=2,column=0)
+        self.phase5_frame = tk.Frame(master=self.process_frame)
+        self.phase5_frame.grid(row=5,column=0)
+        label = tk.Label(master=self.phase5_frame, text="Shared Key")
+        label.grid(row=0,column=0)
+        label_a = tk.Label(master=self.phase5_frame, text='Alice')
+        label_a.grid(row=1,column=0)
+        label_a = tk.Label(master=self.phase5_frame, text='Bob')
+        label_a.grid(row=2,column=0)
             
-            self.indices = list(range(len(self.final_key_alice)))
-            self.two_values = []
-            self.number_of_error_steps = 0
-        self.phase += 1
+
 
 
     def displaying(self, number, plottingList):
@@ -475,59 +384,34 @@ class System:
         
         
     def error_correction(self):
-        while len(self.indices)>=2:
+        while self.two_values!=None:
             self.error_correction_one_step()
-        for item in self.two_values:
-            #print('entered')
-            print(item)
-            for label in self.phase3Objects[item]:
-                label['background']='yellow'
         self.empty_space.grid_forget()
         self.btn_3.grid(row=4, column=0)
         
             
     def privacy_amplification_one_step(self):
         for item in self.two_values:
-            #print('entered')
-            print(item)
-            for label in self.PList[item]:
-                label['background']='yellow'
-        print(self.indices)
-        if len(self.indices)>=2:            
-            self.two_values = random.sample(self.indices, 2)
-            print(self.two_values)
+            for label in self.phase4Objects[item]:
+                label['background']='yellow'           
+        self.two_values, valice, vbob  = self.channel.privacyAmplificationOneStep()
+        if self.two_values!=None:
             for i in self.two_values:
-                for label in self.PList[i]:
-                    label['background']='orange'
-            value_alice = self.a.bit_array[self.two_values[0]]^self.a.bit_array[self.two_values[1]]
-            value_bob = self.b.bit_array[self.two_values[0]]^self.b.bit_array[self.two_values[1]]
-            self.final_key_alice.append(value_alice)
-            self.final_key_bob.append(value_bob)
-            label_a = tk.Label(master = self.phase5_frame, text = str(value_alice))
+                for label in self.phase4Objects[i]:#self.indices.index(i)]:
+                    label['background']='orange'               
+            label_a = tk.Label(master = self.phase5_frame, text = str(valice))
             label_a.grid(row=1, column=1+self.number_of_error_steps)
-            label_b = tk.Label(master = self.phase5_frame, text = str(value_bob))
+            label_b = tk.Label(master = self.phase5_frame, text = str(vbob))
             label_b.grid(row=2, column=1+self.number_of_error_steps)
             self.number_of_error_steps +=1
 
-            tmp1 = self.two_values[0]
-            tmp2 = self.two_values[1]
-            self.indices.remove(self.two_values[0])
-            self.indices.remove(self.two_values[1])
-            self.two_values[0] = tmp1
-            self.two_values[1] = tmp2
-            print(self.indices)
         else:
-            print("not enough values")   
+            print("not enough values")
             self.finish_routine()
      
     def privacy_amplification(self):
-        while len(self.indices)>=2:
+        while self.two_values!=None:
             self.privacy_amplification_one_step() 
-        for item in self.two_values:
-            #print('entered')
-            print(item)
-            for label in self.PList[item]:
-                label['background']='yellow'
         self.finish_routine()
 
     def finish_routine(self):
@@ -540,12 +424,19 @@ class System:
         label = tk.Label(master=frame, text='Congratulations. You have obtained a shared private key. You can try again or exit.')
         label.grid(row=0, column=0)
     def restart(self):
-        self.process_frame.grid_remove()
-        self.start()
+        self.window.destroy()
+        self.channel = None
+        self.currentStep = 0
+        self.number_of_error_steps = 0
+        self.phase = 0
+        self.phase1Objects = []
+        self.phase2Objects = []
+        self.phase3Objects = []
+        self.phase4Objects = []
+        self.initializeTkinter()
     def abort(self):
         self.restart()
-    def start(self):
-        pass
+
     
 
 test_system = System()
