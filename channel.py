@@ -158,3 +158,15 @@ class Channel:
                     self.e.keepBit(-1)
             return [twoValues, value_alice, value_bob, value_eve]
         return [twoValues, -1, -1, -1]
+    
+    def compareFinalKeys(self):
+        shared = True
+        private = True
+        for index in range(self.a.getArrayLength()):
+            if not (self.compareBit(index)):
+                shared = False
+            if self.e!=None:
+                if self.e.bit_array[index]!=-1:
+                    private = False
+        return [shared, private]
+                    

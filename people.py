@@ -117,6 +117,7 @@ class Person:
     def XOR(self, i1, i2):
         """returns the XOR value of two bits at given indices i1, i2"""
         return (self.bit_array[i1]+self.bit_array[i2])%2
+    
 
     
 class Bob(Person):

@@ -474,10 +474,23 @@ class System:
         self.btn_3['text'] = 'Restart'
         self.btn_3['command'] = self.restart
         self.empty_space.grid_forget()
+        self.btn_1.grid_forget()
+        self.btn_2.grid_forget()
+        self.empty_space.grid(row=1, column=0)
+        self.empty_space2.grid(row=2, column=0)
         self.btn_3.grid(row=4, column=0)
         frame = tk.Frame(master = self.process_frame)
         frame.grid(row=6, column=0)
-        label = tk.Label(master=frame, text='Congratulations. You have obtained a shared private key. You can try again or exit.')
+        self.channel.replaceKey()
+        sharedKey, private = self.channel.compareFinalKeys()
+        if sharedKey:
+            if private:
+                displayText = 'Congratulations. You have obtained a shared private key. You can try again or exit.'
+            else:
+                displayText = 'Unfortunately, Eve knows at least parts of your shared private key. You might want to try again by clicking on restart.'
+        else:
+            displayText = 'Unfortunately, you have not obtained the same private key. You might want to try again by clicking on restart.'
+        label = tk.Label(master=frame, text=displayText)
         label.grid(row=0, column=0)
     def restart(self):
         """resets all necessary values and restarts tkinter"""
