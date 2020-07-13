@@ -160,6 +160,8 @@ class Channel:
         return [twoValues, -1, -1, -1]
     
     def compareFinalKeys(self):
+        """return if the final keys are shared among Alice and Bob and if they 
+        are private, meaning that Eve does not have any knowledge about it"""
         shared = True
         private = True
         for index in range(self.a.getArrayLength()):

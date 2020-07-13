@@ -25,7 +25,9 @@ class System:
         """prepares variables and menu for the upcoming phase"""
         #transmission and measurement of qubits
         if self.phase ==0:
-            number = self.getNumber()
+            number = self.getNumber("probability")
+            while number==None:
+                number = self.getNumber("probability")
             self.channel = Channel(number)
             self.go_to_phase1(number)
         #key sifting
@@ -55,7 +57,9 @@ class System:
     def simulate_multiple_cycle(self):
         """Alice generates a by the user defined number of qubits, Bob (and 
         possibly Eve) measures it, results are displayed in window"""
-        number = int(self.getNumber())
+        number = int(self.getNumber("int"))
+        while number==None:
+                number = self.getNumber("probability")
         for i in range(number):
             self.simulate_one_cycle()
         
@@ -105,13 +109,42 @@ class System:
         self.window.mainloop()
 
 
-
             
-    def getNumber(self):
-        """returns number entered by the user"""
-        number = float(self.entry.get())
-        self.entry.delete(0,tk.END)
+    def getNumber(self, typeArgument):
+        """returns number entered by the user, raises exceptions in invalid 
+        cases"""
+        
+        try:
+            number = float(self.entry.get())
+            self.entry.delete(0,tk.END)
+            print(number)
+            try:
+                if typeArgument=="probability" and (number<0 or number>1):
+                    raise ValueError("A probability must be between 0 and 1")
+                elif typeArgument=="int" and number<=0:
+                    raise ValueError("The number must be positive")
+            except ValueError:
+                self.errorwindow = tk.Tk()
+                self.typeArgument = typeArgument
+                label = tk.Label(master=self.errorwindow, text='Please pay attention to the allowed value ranges')
+                label.grid(row=0, column=0)
+                button = tk.Button(master=self.errorwindow, text="OK", width=15, 
+                                   height=5, command = self.errorwindow.destroy)
+                button.grid(row=1, column=0)
+                return None
+            
+        except:
+            self.errorwindow = tk.Tk()
+            label = tk.Label(master=self.errorwindow, text='Please enter a number')
+            label.grid(row=0, column=0)
+            button = tk.Button(master=self.errorwindow, text="OK", width=15, 
+                               height=5, command = self.errorwindow.destroy )
+            button.grid(row=1, column=0)
+        
+            
         return number
+    
+    
     def go_to_phase1(self, number):
         """displays menu and table layout for phase "transmission and 
         measurement of qubits"""
@@ -329,7 +362,9 @@ class System:
     def error_rate(self):
         """calculates the error rate on a random subsample of the size that 
         the user specified"""
-        number = int(self.getNumber())
+        number = int(self.getNumber("int"))
+        while number==None:
+            number = self.getNumber("probability")
         #get subset for error calculation
         subset = self.channel.getSubset(number)
 
@@ -509,5 +544,3 @@ class System:
         self.restart()
 
     
-
-test_system = System()
