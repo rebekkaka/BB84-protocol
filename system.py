@@ -59,7 +59,7 @@ class System:
         possibly Eve) measures it, results are displayed in window"""
         number = int(self.getNumber("int"))
         while number==None:
-                number = self.getNumber("probability")
+            number = self.getNumber("int")
         for i in range(number):
             self.simulate_one_cycle()
         
@@ -115,15 +115,19 @@ class System:
         cases"""
         
         try:
+            #get number
             number = float(self.entry.get())
             self.entry.delete(0,tk.END)
-            print(number)
             try:
+                #check if value ranges are respected
                 if typeArgument=="probability" and (number<0 or number>1):
                     raise ValueError("A probability must be between 0 and 1")
                 elif typeArgument=="int" and number<=0:
                     raise ValueError("The number must be positive")
+                elif typeArgument=="subset" and (number<=0 or number>channel.a.getArrayLength()):
+                    raise ValueError("The number must be positive and smaller than the total number of bits")
             except ValueError:
+                #tell user to reenter a valid number
                 self.errorwindow = tk.Tk()
                 self.typeArgument = typeArgument
                 label = tk.Label(master=self.errorwindow, text='Please pay attention to the allowed value ranges')
@@ -134,6 +138,7 @@ class System:
                 return None
             
         except:
+            #tell user to enter number
             self.errorwindow = tk.Tk()
             label = tk.Label(master=self.errorwindow, text='Please enter a number')
             label.grid(row=0, column=0)
@@ -256,9 +261,9 @@ class System:
     def go_to_phase5(self):
         """display menu for phase "privacy amplification" """
         self.phase_label.delete(1.0, tk.END)
-        self.phase_label.insert(tk.END,'Phase 5: Privacy amplification')
-        self.btn_1['text'] = 'One privacy amplification step'
-        self.btn_2['text'] = 'All privacy amplification at once'
+        self.phase_label.insert(tk.END,'Phase 5: Privacy amplification (PA)')
+        self.btn_1['text'] = 'One PA step'
+        self.btn_2['text'] = 'All PA steps at once'
         self.btn_1['command'] = self.privacy_amplification_one_step
         self.btn_2['command'] = self.privacy_amplification
         self.btn_3.grid_forget()
@@ -276,6 +281,7 @@ class System:
         tkinter window"""
         objects = []
         rn=0
+        images = 0
         for i in plottingList:
             if i[0]!=-1:
                 label = tk.Label(master=self.phase1_frame, text=str(i[0]), width=2, height=2)
@@ -290,7 +296,7 @@ class System:
                 label2.grid(row=rn, column=2+number)
                 rn+=1
                 objects.append(label2)
-                if i!=len(plottingList)-1:
+                if images!=len(plottingList)-1:
                     name = str(i[0])+str(i[1])+".png"
                     load = Image.open(name)
                     render = ImageTk.PhotoImage(load)
@@ -298,11 +304,14 @@ class System:
                     img.image = render
                     img.grid(row=rn, column=2+number)
                     rn+=1
+                    images+=1
             else:
                 objects.append(None)
                 objects.append(None)
                 rn+=3
-        self.phase1Objects.append(objects)       
+                images+=1
+        self.phase1Objects.append(objects) 
+        
 
         if self.currentStep == 0:
             self.empty_space.grid_forget()
@@ -362,9 +371,9 @@ class System:
     def error_rate(self):
         """calculates the error rate on a random subsample of the size that 
         the user specified"""
-        number = int(self.getNumber("int"))
+        number = int(self.getNumber("subset"))
         while number==None:
-            number = self.getNumber("probability")
+            number = self.getNumber("subset")
         #get subset for error calculation
         subset = self.channel.getSubset(number)
 
@@ -435,14 +444,14 @@ class System:
             if keep:
                 tmp = []                
                 label_a = tk.Label(master = self.phase4_frame, text = str(valice), width=2, height=2)
-                label_a.grid(row=1, column=1+self.number_of_error_steps)
+                label_a.grid(row=1, column=2+self.number_of_error_steps)
                 if ve!=-1:
                     label_e = tk.Label(master = self.phase4_frame, text = str(ve), width=2, height=2)
-                    label_e.grid(row=2, column=1+self.number_of_error_steps)
+                    label_e.grid(row=2, column=2+self.number_of_error_steps)
                 label_b = tk.Label(master = self.phase4_frame, text = str(vbob), width=2, height=2)
                 if self.eavesdropper: row_b =3 
                 else: row_b=2
-                label_b.grid(row=row_b, column=1+self.number_of_error_steps)
+                label_b.grid(row=row_b, column=2+self.number_of_error_steps)
                 tmp.append(label_a)
                 tmp.append(label_b)
                 self.phase4Objects.append(tmp)
@@ -483,14 +492,14 @@ class System:
                     label['background']='orange'  
             #display result
             label_a = tk.Label(master = self.phase5_frame, text = str(valice), width=2, height=2)
-            label_a.grid(row=1, column=1+self.number_of_error_steps)
+            label_a.grid(row=1, column=2+self.number_of_error_steps)
             if veve !=-1:
                 label_e = tk.Label(master = self.phase5_frame, text = str(veve), width=2, height=2)
-                label_e.grid(row=2, column=1+self.number_of_error_steps)
+                label_e.grid(row=2, column=2+self.number_of_error_steps)
             if self.eavesdropper: row_b =3 
             else: row_b=2
             label_b = tk.Label(master = self.phase5_frame, text = str(vbob), width=2, height=2)
-            label_b.grid(row=row_b, column=1+self.number_of_error_steps)
+            label_b.grid(row=row_b, column=2+self.number_of_error_steps)
             self.number_of_error_steps +=1
         #if there are not enough values to do one step
         else:
@@ -502,7 +511,6 @@ class System:
         """performs all possible privacy amplification steps"""
         while self.two_values!=None:
             self.privacy_amplification_one_step() 
-        self.finish_routine()
 
     def finish_routine(self):
         """prepares menu for restart and displays message about result"""
@@ -518,6 +526,7 @@ class System:
         frame.grid(row=6, column=0)
         self.channel.replaceKey()
         sharedKey, private = self.channel.compareFinalKeys()
+        print(sharedKey, private)
         if sharedKey:
             if private:
                 displayText = 'Congratulations. You have obtained a shared private key. You can try again or exit.'

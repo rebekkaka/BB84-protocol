@@ -24,9 +24,9 @@ class Person:
     def get_operator(self, basis):
         """return measurement operator according to basis""" 
         if basis==0:
-            A = np.array([[0, 0], [0, 1]])
+            A = np.array([[1, 0], [0, -1]])
         else:
-            A = np.array([[0.5,-0.5],[-0.5,0.5]])
+            A = np.array([[0,1],[1,0]])
         return A
 
     def get_density_matrix(self, bit, basis):
@@ -49,10 +49,10 @@ class Person:
         #obtain measurement operator
         A = self.get_operator(basis)
         #perform measurement
-        value = np.trace(np.matmul(rho, A))
+        value = np.trace(np.matmul( A, rho))
         #determine resulting bit
-        r = random.random()
-        if r<value:
+        r = random.random()*2-1
+        if r>value:
             result = 1
         else:
             result = 0
