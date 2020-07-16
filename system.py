@@ -124,12 +124,10 @@ class System:
                     raise ValueError("A probability must be between 0 and 1")
                 elif typeArgument=="int" and number<=0:
                     raise ValueError("The number must be positive")
-                elif typeArgument=="subset" and (number<=0 or number>channel.a.getArrayLength()):
-                    raise ValueError("The number must be positive and smaller than the total number of bits")
+                return number
             except ValueError:
                 #tell user to reenter a valid number
                 self.errorwindow = tk.Tk()
-                self.typeArgument = typeArgument
                 label = tk.Label(master=self.errorwindow, text='Please pay attention to the allowed value ranges')
                 label.grid(row=0, column=0)
                 button = tk.Button(master=self.errorwindow, text="OK", width=15, 
@@ -147,7 +145,7 @@ class System:
             button.grid(row=1, column=0)
         
             
-        return number
+        
     
     
     def go_to_phase1(self, number):
@@ -159,7 +157,7 @@ class System:
             self.indexList = [0,1,4,5]
             self.eList = [2,3]
         else:
-            self.indexList = [2,3]
+            self.indexList = [0,1,2,3]
             self.eList = []
             self.eavesdropper = False
             
@@ -371,9 +369,11 @@ class System:
     def error_rate(self):
         """calculates the error rate on a random subsample of the size that 
         the user specified"""
-        number = int(self.getNumber("subset"))
+        number = int(self.getNumber("int"))
         while number==None:
-            number = self.getNumber("subset")
+            number = self.getNumber("int")
+        if number > self.channel.a.getArrayLength():
+            number == self.channel.a.getArrayLength()-1
         #get subset for error calculation
         subset = self.channel.getSubset(number)
 
@@ -458,7 +458,6 @@ class System:
                 self.number_of_error_steps +=1
         #if there are not enough value to do one step
         else:
-            print("not enough values")
             #display go-to-next-phase button
             self.empty_space.grid_forget()
             self.btn_3.grid(row=4, column=0)
@@ -503,7 +502,6 @@ class System:
             self.number_of_error_steps +=1
         #if there are not enough values to do one step
         else:
-            print("not enough values")
             #start finish routine
             self.finish_routine()
      
@@ -526,7 +524,6 @@ class System:
         frame.grid(row=6, column=0)
         self.channel.replaceKey()
         sharedKey, private = self.channel.compareFinalKeys()
-        print(sharedKey, private)
         if sharedKey:
             if private:
                 displayText = 'Congratulations. You have obtained a shared private key. You can try again or exit.'
@@ -547,6 +544,7 @@ class System:
         self.phase2Objects = []
         self.phase3Objects = []
         self.phase4Objects = []
+        self.two_values = []
         self.initializeTkinter()
     def abort(self):
         """restarts program"""
