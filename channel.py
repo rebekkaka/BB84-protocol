@@ -1,5 +1,5 @@
 
-from people import *
+from agents import *
 
 class Channel:
     def __init__(self, eavesdroppingRate):

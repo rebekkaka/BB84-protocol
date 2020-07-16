@@ -295,7 +295,7 @@ class System:
                 rn+=1
                 objects.append(label2)
                 if images!=len(plottingList)-1:
-                    name = str(i[0])+str(i[1])+".png"
+                    name = str(i[0])+str(i[1])+'.png'
                     load = Image.open(name)
                     render = ImageTk.PhotoImage(load)
                     img = tk.Label(master=self.phase1_frame, image=render)
